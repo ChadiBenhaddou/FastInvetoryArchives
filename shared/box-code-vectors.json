@@ -1,0 +1,108 @@
+{
+  "alphabet": "ACDEFGHJKLMNPQRTUVWXY",
+  "weights": [
+    13,
+    8,
+    4,
+    2,
+    1
+  ],
+  "valid": [
+    {
+      "device": "A",
+      "sequence": 1,
+      "code": "A-0001-C"
+    },
+    {
+      "device": "A",
+      "sequence": 123,
+      "code": "A-0123-N"
+    },
+    {
+      "device": "A",
+      "sequence": 9999,
+      "code": "A-9999-L"
+    },
+    {
+      "device": "C",
+      "sequence": 42,
+      "code": "C-0042-D"
+    },
+    {
+      "device": "K",
+      "sequence": 1000,
+      "code": "K-1000-J"
+    },
+    {
+      "device": "Y",
+      "sequence": 9999,
+      "code": "Y-9999-V"
+    },
+    {
+      "device": "M",
+      "sequence": 5050,
+      "code": "M-5050-P"
+    },
+    {
+      "device": "X",
+      "sequence": 7,
+      "code": "X-0007-D"
+    }
+  ],
+  "invalid": [
+    {
+      "input": "A-0123-A",
+      "reason": "checksum"
+    },
+    {
+      "input": "A-0132-N",
+      "reason": "checksum"
+    },
+    {
+      "input": "A-0124-N",
+      "reason": "checksum"
+    },
+    {
+      "input": "C-0123-N",
+      "reason": "checksum"
+    },
+    {
+      "input": "O-0123-N",
+      "reason": "device"
+    },
+    {
+      "input": "A-0123-O",
+      "reason": "format"
+    },
+    {
+      "input": "A-0000-A",
+      "reason": "sequence"
+    },
+    {
+      "input": "A-123-K",
+      "reason": "format"
+    },
+    {
+      "input": "",
+      "reason": "format"
+    }
+  ],
+  "normalize": [
+    {
+      "input": " a-0123-n ",
+      "code": "A-0123-N"
+    },
+    {
+      "input": "A0123N",
+      "code": "A-0123-N"
+    },
+    {
+      "input": "A 0123 N",
+      "code": "A-0123-N"
+    },
+    {
+      "input": "A–0123–N",
+      "code": "A-0123-N"
+    }
+  ]
+}

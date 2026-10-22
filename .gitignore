@@ -1,0 +1,8 @@
+.env
+.devdata/
+dist/
+bundle/out/
+node_modules/
+.idea/
+.vscode/
+*.log

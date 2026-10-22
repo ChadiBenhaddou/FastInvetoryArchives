@@ -1,0 +1,129 @@
+# Rapid Archive Inventory — full stack on one air-gapped PC.
+#
+# Network design:
+#   - "internal" is a Docker internal network: containers on it have NO route
+#     outside the host, even if the PC were ever connected by mistake.
+#   - Only the "app" container is also on "frontend", solely so its port can be
+#     published — and it is published on 127.0.0.1 only (never on the LAN).
+
+name: archive-inventory
+
+x-app-env: &app-env
+  APP_NAME: ${APP_NAME:-Inventaire des archives}
+  APP_ENV: ${APP_ENV:-production}
+  APP_KEY: ${APP_KEY:?APP_KEY manquant dans .env}
+  APP_DEBUG: ${APP_DEBUG:-false}
+  APP_URL: http://localhost
+  APP_VERSION: ${APP_VERSION:-dev}
+  APP_LOCALE: fr
+  APP_FALLBACK_LOCALE: en
+  SESSION_LIFETIME: 480
+  LOG_CHANNEL: daily
+  LOG_LEVEL: ${LOG_LEVEL:-info}
+  DB_CONNECTION: mysql
+  DB_HOST: mysql
+  DB_PORT: 3306
+  DB_DATABASE: ${DB_DATABASE:-archive}
+  DB_USERNAME: ${DB_USERNAME:-archive}
+  DB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD manquant dans .env}
+  MEILISEARCH_HOST: http://meilisearch:7700
+  MEILISEARCH_KEY: ${MEILI_MASTER_KEY:?MEILI_MASTER_KEY manquant dans .env}
+  ARCHIVE_ROOT: /srv/archive
+
+x-app-common: &app-common
+  image: archive-inventory/app:${APP_VERSION:-dev}
+  restart: unless-stopped
+  volumes:
+    # Host folder holding the watched import folder, the images and the backups.
+    - ${ARCHIVE_HOST_ROOT:?ARCHIVE_HOST_ROOT manquant dans .env}:/srv/archive
+    - app-storage:/var/www/html/storage
+  networks: [internal]
+
+services:
+  mysql:
+    image: mysql:8.4.9
+    restart: unless-stopped
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+    environment:
+      MYSQL_DATABASE: ${DB_DATABASE:-archive}
+      MYSQL_USER: ${DB_USERNAME:-archive}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:?DB_ROOT_PASSWORD manquant dans .env}
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ./docker/mysql/archive.cnf:/etc/mysql/conf.d/archive.cnf:ro
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p$$MYSQL_ROOT_PASSWORD --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
+    networks: [internal]
+
+  meilisearch:
+    image: getmeili/meilisearch:v1.54.3
+    restart: unless-stopped
+    environment:
+      MEILI_ENV: production
+      MEILI_MASTER_KEY: ${MEILI_MASTER_KEY}
+      MEILI_NO_ANALYTICS: "true"
+      MEILI_DB_PATH: /meili_data/data.ms
+      MEILI_DUMP_DIR: /meili_data/dumps
+    volumes:
+      - meili-data:/meili_data
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:7700/health || curl -fsS http://127.0.0.1:7700/health"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+    networks: [internal]
+
+  app:
+    <<: *app-common
+    build:
+      context: .
+      dockerfile: docker/app/Dockerfile
+      target: app
+    environment:
+      <<: *app-env
+      CONTAINER_ROLE: app
+    ports:
+      - "127.0.0.1:${HTTP_PORT:-80}:80"
+    networks: [internal, frontend]
+    depends_on:
+      mysql: { condition: service_healthy }
+      meilisearch: { condition: service_healthy }
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1/up"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 60s
+
+  queue:
+    <<: *app-common
+    environment:
+      <<: *app-env
+      CONTAINER_ROLE: queue
+    depends_on:
+      app: { condition: service_healthy }
+
+  scheduler:
+    <<: *app-common
+    environment:
+      <<: *app-env
+      CONTAINER_ROLE: scheduler
+    depends_on:
+      app: { condition: service_healthy }
+
+networks:
+  internal:
+    internal: true
+  frontend: {}
+
+volumes:
+  mysql-data:
+  meili-data:
+  app-storage:
