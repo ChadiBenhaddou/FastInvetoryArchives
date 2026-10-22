@@ -48,6 +48,24 @@ powershell -ExecutionPolicy Bypass -File scripts\e2e-desktop.ps1 -Password <mot 
   d'autres photos est mis de côté comme **conflit** pour un administrateur.
 - Format du manifeste : [shared/manifest.schema.json](shared/manifest.schema.json).
 
+## Traitement (OCR)
+
+- Service `ocr-worker` (Python/FastAPI, réseau interne uniquement) : **PaddleOCR PP-OCRv5** (détection +
+  reconnaissance arabe et latine), **Tesseract 5** (`ara+fra`, modèles *tessdata_best*) en secours.
+  Tous les modèles sont dans l'image : aucun téléchargement à l'exécution.
+- Par photo : redressement 90/180/270°, correction de l'inclinaison, normalisation du contraste, débruitage des
+  photos granuleuses ; chaque ligne est lue par les deux modèles et l'écriture de la ligne décide.
+  Les chiffres occidentaux dans les lignes arabes sont relus mot par mot (le modèle arabe a tendance à les omettre).
+- Pipeline Laravel : à l'import d'une boîte, une tâche `RunOcrJob` par photo de document (file `ocr`, workers
+  `pipeline`) ; la boîte passe en **« à réviser »** quand toutes ses photos sont traitées. Une photo en échec après
+  3 essais est signalée pour révision, sans bloquer sa boîte.
+- Révision demandée si : confiance OCR < 0,6, écriture manuscrite probable, page sans texte, OCR en échec.
+- Relancer : `docker compose exec app php artisan archive:reprocess --failed` (ou des codes de boîtes, ou `--all`).
+- Tests OCR (réseau coupé) :
+  `docker build --target test -t archive-inventory/ocr-worker:test ocr-worker` puis
+  `docker run --rm --network none archive-inventory/ocr-worker:test`.
+- ZIP d'exemple avec de vraies pages FR/AR : `docker run --rm -v ${PWD}/.devdata/samples:/out archive-inventory/ocr-worker:test python -m tests.make_sample_export /out K`.
+
 ## APK Android
 
 ```powershell

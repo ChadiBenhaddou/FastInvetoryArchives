@@ -19,6 +19,7 @@ Route::prefix('api')->group(function () {
     Route::middleware(['auth', 'active'])->group(function () {
         Route::post('auth/logout', [AuthController::class, 'logout']);
         Route::get('system/status', [SystemController::class, 'status']);
+        Route::get('pipeline/status', [SystemController::class, 'pipeline']);
 
         // Import: daily operator work, open to admins and reviewers (every import records who did it).
         Route::post('uploads', [UploadController::class, 'store'])->name('uploads.store');

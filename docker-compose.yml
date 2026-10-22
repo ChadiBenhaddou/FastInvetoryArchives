@@ -29,6 +29,8 @@ x-app-env: &app-env
   DB_DATABASE: ${DB_DATABASE:-archive}
   DB_USERNAME: ${DB_USERNAME:-archive}
   DB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD manquant dans .env}
+  OCR_URL: http://ocr-worker:8000
+  PIPELINE_WORKERS: ${PIPELINE_WORKERS:-2}
   MEILISEARCH_HOST: http://meilisearch:7700
   MEILISEARCH_KEY: ${MEILI_MASTER_KEY:?MEILI_MASTER_KEY manquant dans .env}
   ARCHIVE_ROOT: /srv/archive
@@ -122,6 +124,32 @@ services:
       CONTAINER_ROLE: scheduler
     depends_on:
       app: { condition: service_healthy }
+
+  # Processing pipeline workers (OCR now; LLM extraction and indexing in deliverable 5).
+  pipeline:
+    <<: *app-common
+    environment:
+      <<: *app-env
+      CONTAINER_ROLE: queue
+      QUEUES: ocr
+    deploy:
+      replicas: ${PIPELINE_WORKERS:-2}
+    depends_on:
+      app: { condition: service_healthy }
+      ocr-worker: { condition: service_healthy }
+
+  # PaddleOCR (Arabic + Latin) + Tesseract, models baked into the image. No network access.
+  ocr-worker:
+    image: archive-inventory/ocr-worker:${APP_VERSION:-dev}
+    build:
+      context: ./ocr-worker
+      target: base
+    restart: unless-stopped
+    environment:
+      # Each process loads the models (~1 GB RAM) and handles one photo at a time.
+      OCR_PROCESSES: ${OCR_PROCESSES:-2}
+      OCR_CPU_THREADS: ${OCR_CPU_THREADS:-3}
+    networks: [internal]
 
 networks:
   internal:

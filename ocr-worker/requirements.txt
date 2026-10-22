@@ -1,0 +1,7 @@
+# Pinned: the worker runs offline, every version must be known to work together.
+# paddlepaddle 3.3.x fails on CPU (oneDNN "ConvertPirAttribute2RuntimeAttribute"); 3.2.2 is fine.
+paddlepaddle==3.2.2
+paddleocr==3.7.0
+fastapi==0.161.0
+uvicorn==0.54.0
+python-multipart==0.0.32

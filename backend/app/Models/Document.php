@@ -9,9 +9,9 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 #[Fillable([
-    'box_id', 'image_id', 'ocr_text', 'ocr_blocks', 'language', 'ocr_confidence', 'is_handwritten',
+    'box_id', 'image_id', 'ocr_text', 'ocr_blocks', 'language', 'ocr_confidence', 'is_handwritten', 'ocr_engine',
     'extraction_status', 'doc_type', 'doc_date', 'reference_number', 'title', 'persons',
-    'organizations', 'keywords', 'summary', 'extraction_confidence', 'needs_review',
+    'organizations', 'keywords', 'summary', 'extraction_confidence', 'needs_review', 'review_reasons',
     'reviewed_by', 'reviewed_at', 'indexed_at',
 ])]
 class Document extends Model
@@ -30,6 +30,7 @@ class Document extends Model
             'keywords' => 'array',
             'extraction_confidence' => 'float',
             'needs_review' => 'boolean',
+            'review_reasons' => 'array',
             'reviewed_at' => 'datetime',
             'indexed_at' => 'datetime',
         ];

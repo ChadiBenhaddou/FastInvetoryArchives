@@ -31,6 +31,23 @@ return [
         'chunk_bytes' => 8 * 1024 * 1024,
     ],
 
+    'ocr' => [
+        'url' => env('OCR_URL', 'http://ocr-worker:8000'),
+        // A large photo on a busy CPU can take a while; the job timeout is above this.
+        'timeout' => (int) env('OCR_TIMEOUT', 300),
+    ],
+
+    'pipeline' => [
+        // Number of pipeline queue workers running in parallel (used for the time estimate).
+        'workers' => (int) env('PIPELINE_WORKERS', 2),
+    ],
+
+    // A document goes to human review when any of these is true.
+    'review' => [
+        'min_ocr_confidence' => 0.6,
+        'min_extraction_confidence' => 0.6,
+    ],
+
     'meilisearch' => [
         'host' => env('MEILISEARCH_HOST', 'http://meilisearch:7700'),
         'key' => env('MEILISEARCH_KEY'),

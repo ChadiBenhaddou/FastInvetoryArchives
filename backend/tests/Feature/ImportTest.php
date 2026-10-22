@@ -34,6 +34,8 @@ class ImportTest extends TestCase
         $this->root = sys_get_temp_dir().'/archive-test-'.uniqid();
         config(['archive.root' => $this->root, 'archive.import.manifest_schema' => dirname(base_path()).'/shared/manifest.schema.json']);
         Storage::fake('archive');
+        // The processing pipeline has its own tests (PipelineTest): here imports stay imports.
+        Event::fake([BoxImported::class]);
         $this->device = Device::factory()->create(['letter' => 'A']);
     }
 
