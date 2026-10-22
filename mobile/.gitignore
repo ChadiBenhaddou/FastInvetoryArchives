@@ -1,0 +1,14 @@
+node_modules/
+dist/
+# Release signing material never goes into git
+keystore/
+*.keystore
+*.jks
+keystore.properties
+# Android build outputs
+android/.gradle/
+android/build/
+android/app/build/
+android/app/release/
+android/local.properties
+android/capacitor-cordova-android-plugins/build/

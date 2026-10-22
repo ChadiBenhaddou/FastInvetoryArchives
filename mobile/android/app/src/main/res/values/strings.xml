@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Inventaire Archives</string>
+    <string name="title_activity_main">Inventaire Archives</string>
+    <string name="package_name">com.archiveinventory.capture</string>
+    <string name="custom_url_scheme">com.archiveinventory.capture</string>
+</resources>

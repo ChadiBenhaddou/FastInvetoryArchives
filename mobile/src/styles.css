@@ -1,0 +1,25 @@
+@import '@fontsource-variable/noto-sans';
+@import '@fontsource-variable/noto-sans-arabic';
+@import 'tailwindcss';
+
+@theme {
+    --font-sans: 'Noto Sans Variable', 'Noto Sans Arabic Variable', system-ui, sans-serif;
+}
+
+/* Dark, high-contrast UI: readable in dim storage rooms and gentle on the battery. */
+html,
+body,
+#root {
+    height: 100%;
+}
+
+body {
+    @apply bg-stone-950 text-stone-100 antialiased select-none;
+    overscroll-behavior: none;
+    -webkit-tap-highlight-color: transparent;
+}
+
+input,
+textarea {
+    @apply select-text;
+}
