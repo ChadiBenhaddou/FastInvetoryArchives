@@ -9,9 +9,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[Fillable([
-    'export_id', 'device_id', 'agent_name', 'file_name', 'file_size', 'source', 'app_version',
+    'export_id', 'device_id', 'agent_name', 'file_name', 'file_size', 'archived_path', 'source', 'app_version',
     'exported_at', 'sequence_from', 'sequence_to', 'box_count', 'photo_count', 'status',
-    'report', 'imported_by', 'imported_at',
+    'report', 'imported_by', 'started_at', 'imported_at',
 ])]
 class Import extends Model
 {
@@ -21,6 +21,7 @@ class Import extends Model
             'status' => ImportStatus::class,
             'report' => 'array',
             'exported_at' => 'datetime',
+            'started_at' => 'datetime',
             'imported_at' => 'datetime',
         ];
     }

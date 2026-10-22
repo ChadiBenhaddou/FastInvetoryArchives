@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Fillable(['letter', 'label', 'last_sequence_seen', 'admin_pin', 'is_active', 'notes'])]
+#[Fillable(['letter', 'label', 'last_sequence_seen', 'last_sequence_issued', 'open_sequences', 'admin_pin', 'is_active', 'notes'])]
 #[Hidden(['admin_pin'])]
 class Device extends Model
 {
@@ -19,6 +19,8 @@ class Device extends Model
     {
         return [
             'last_sequence_seen' => 'integer',
+            'last_sequence_issued' => 'integer',
+            'open_sequences' => 'array',
             'admin_pin' => 'encrypted',
             'is_active' => 'boolean',
         ];

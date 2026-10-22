@@ -1,8 +1,16 @@
 <?php
 
-use Illuminate\Foundation\Inspiring;
-use Illuminate\Support\Facades\Artisan;
+use App\Models\UploadSession;
+use Illuminate\Support\Facades\Schedule;
 
-Artisan::command('inspire', function () {
-    $this->comment(Inspiring::quote());
-})->purpose('Display an inspiring quote');
+// Watched import folder.
+Schedule::command('archive:scan-imports')->everyFifteenSeconds()->withoutOverlapping();
+
+// Browser uploads abandoned halfway (tab closed, cable pulled...).
+Schedule::call(function () {
+    UploadSession::whereNull('import_id')->where('updated_at', '<', now()->subDays(2))->get()
+        ->each(function (UploadSession $upload) {
+            @unlink($upload->partPath());
+            $upload->delete();
+        });
+})->daily()->name('purge-abandoned-uploads');

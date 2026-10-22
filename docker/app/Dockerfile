@@ -40,6 +40,8 @@ RUN composer install --no-dev --no-scripts --no-autoloader --prefer-dist --no-in
 
 ########## Production app ##########
 FROM base AS app
+# Contract with the phone app (manifest schema, box code vectors): base_path('../shared').
+COPY shared /var/www/shared
 COPY backend/ ./
 COPY --from=vendor /var/www/html/vendor ./vendor
 COPY --from=assets /build/public/build ./public/build
@@ -53,7 +55,6 @@ ENTRYPOINT ["entrypoint"]
 
 ########## Test image (dev dependencies + test runner) ##########
 FROM app AS test
-COPY shared /var/www/shared
 RUN composer install --prefer-dist --no-interaction --no-scripts \
  && composer dump-autoload \
  && touch .env

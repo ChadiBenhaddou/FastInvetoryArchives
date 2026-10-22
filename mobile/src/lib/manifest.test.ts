@@ -44,6 +44,7 @@ const input = {
     exportedAt: '2026-10-22T18:00:00+01:00',
     lastIssued: 125,
     voidedSequences: [124, 120],
+    openSequences: [125],
     boxes: [
         { box: box(123, 'A-0123-N'), photos: [photo('A-0123-N', 0), photo('A-0123-N', 1)] },
         { box: box(121, 'A-0121-L'), photos: [photo('A-0121-L', 0)] },
@@ -70,7 +71,8 @@ describe('manifest', () => {
 
     it('only uses keys allowed by the shared schema', () => {
         const m = buildManifest(input);
-        expect(Object.keys(m).sort()).toEqual([...schema.required].sort());
+        expect(Object.keys(m).sort()).toEqual(Object.keys(schema.properties).sort());
+        expect(m.open_sequences).toEqual([125]);
         const boxSchema = schema.properties.boxes.items;
         expect(Object.keys(m.boxes[0]).sort()).toEqual([...boxSchema.required].sort());
         expect(Object.keys(m.boxes[0].photos[0]).sort()).toEqual([...boxSchema.properties.photos.items.required].sort());

@@ -18,6 +18,9 @@ x-app-env: &app-env
   APP_LOCALE: fr
   APP_FALLBACK_LOCALE: en
   SESSION_LIFETIME: 480
+  # Must exceed the longest job (a big import may take up to an hour), otherwise
+  # the queue would hand the same job to a second worker.
+  DB_QUEUE_RETRY_AFTER: 4000
   LOG_CHANNEL: daily
   LOG_LEVEL: ${LOG_LEVEL:-info}
   DB_CONNECTION: mysql
@@ -29,6 +32,8 @@ x-app-env: &app-env
   MEILISEARCH_HOST: http://meilisearch:7700
   MEILISEARCH_KEY: ${MEILI_MASTER_KEY:?MEILI_MASTER_KEY manquant dans .env}
   ARCHIVE_ROOT: /srv/archive
+  # Same folder as seen from Windows/Ubuntu, only used to show paths to the user.
+  ARCHIVE_HOST_PATH: ${ARCHIVE_HOST_ROOT}
 
 x-app-common: &app-common
   image: archive-inventory/app:${APP_VERSION:-dev}

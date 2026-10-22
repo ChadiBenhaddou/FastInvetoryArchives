@@ -5,6 +5,8 @@ import { AuthProvider, useAuth } from './auth/AuthContext';
 import Layout from './components/Layout';
 import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
+import DevicesPage from './pages/DevicesPage';
+import ImportPage from './pages/ImportPage';
 import UsersPage from './pages/UsersPage';
 import NotFoundPage from './pages/NotFoundPage';
 
@@ -27,6 +29,15 @@ const router = createBrowserRouter([
         ),
         children: [
             { index: true, element: <DashboardPage /> },
+            { path: 'import', element: <ImportPage /> },
+            {
+                path: 'devices',
+                element: (
+                    <RequireAuth role="admin">
+                        <DevicesPage />
+                    </RequireAuth>
+                ),
+            },
             {
                 path: 'users',
                 element: (

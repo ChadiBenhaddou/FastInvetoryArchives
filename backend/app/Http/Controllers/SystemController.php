@@ -28,6 +28,8 @@ class SystemController extends Controller
                 'pending' => DB::table('jobs')->count(),
                 'failed' => DB::table('failed_jobs')->count(),
             ],
+            'folders' => collect(['import', 'imported', 'failed', 'storage', 'backups'])
+                ->mapWithKeys(fn ($f) => [$f => rtrim(config('archive.host_root'), '/\\').'/'.$f]),
             'disk' => is_dir($root) ? [
                 'free_bytes' => disk_free_space($root),
                 'total_bytes' => disk_total_space($root),

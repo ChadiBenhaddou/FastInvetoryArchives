@@ -10,8 +10,8 @@ AS_WWW="setpriv --reuid=www-data --regid=www-data --init-groups"
 # The storage volume persists across image updates, so recreate its layout.
 mkdir -p storage/app storage/framework/cache/data storage/framework/sessions \
          storage/framework/views storage/logs
-mkdir -p "$ARCHIVE_ROOT/import" "$ARCHIVE_ROOT/imported" "$ARCHIVE_ROOT/failed" \
-         "$ARCHIVE_ROOT/storage" "$ARCHIVE_ROOT/backups"
+mkdir -p "$ARCHIVE_ROOT/import" "$ARCHIVE_ROOT/processing" "$ARCHIVE_ROOT/imported" \
+         "$ARCHIVE_ROOT/failed" "$ARCHIVE_ROOT/storage" "$ARCHIVE_ROOT/backups"
 chown -R www-data:www-data storage bootstrap/cache
 chown www-data:www-data "$ARCHIVE_ROOT" "$ARCHIVE_ROOT"/* 2>/dev/null || true
 
@@ -32,7 +32,7 @@ case "$ROLE" in
     exec supervisord -c /etc/supervisor/supervisord.conf
     ;;
   queue)
-    exec $AS_WWW php artisan queue:work --sleep=2 --tries=3 --timeout=900 --max-time=3600
+    exec $AS_WWW php artisan queue:work --queue="${QUEUES:-imports,default}" --sleep=2 --tries=3 --timeout=3700 --max-time=3600
     ;;
   scheduler)
     exec $AS_WWW php artisan schedule:work

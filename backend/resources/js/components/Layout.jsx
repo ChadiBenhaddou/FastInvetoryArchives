@@ -1,5 +1,5 @@
 import { NavLink, Outlet } from 'react-router';
-import { Archive, LayoutDashboard, LogOut, Users } from 'lucide-react';
+import { Archive, LayoutDashboard, LogOut, Smartphone, Upload, Users } from 'lucide-react';
 import { useAuth } from '../auth/AuthContext';
 
 const meta = (name) => document.querySelector(`meta[name="${name}"]`)?.content ?? '';
@@ -7,6 +7,8 @@ const meta = (name) => document.querySelector(`meta[name="${name}"]`)?.content ?
 // Sections are added here as deliverables land (import, boxes, review, search...).
 const NAV = [
     { to: '/', label: 'Tableau de bord', icon: LayoutDashboard, end: true },
+    { to: '/import', label: 'Import', icon: Upload },
+    { to: '/devices', label: 'Appareils', icon: Smartphone, role: 'admin' },
     { to: '/users', label: 'Utilisateurs', icon: Users, role: 'admin' },
 ];
 

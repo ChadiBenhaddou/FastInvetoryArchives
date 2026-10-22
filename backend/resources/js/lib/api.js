@@ -4,6 +4,7 @@ export class ApiError extends Error {
     constructor(status, body) {
         super(body?.message || `Erreur ${status}`);
         this.status = status;
+        this.body = body;
         this.errors = body?.errors || {};
     }
 
@@ -23,16 +24,19 @@ export function setUnauthorizedHandler(handler) {
     onUnauthorized = handler;
 }
 
-export async function api(path, { method = 'GET', body, signal } = {}) {
-    const headers = { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' };
+/** Raw bodies (file chunks) are sent as-is; plain objects as JSON. */
+const isRaw = (body) => body instanceof FormData || body instanceof Blob;
+
+export async function api(path, { method = 'GET', body, signal, headers: extraHeaders = {} } = {}) {
+    const headers = { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest', ...extraHeaders };
     const token = xsrfToken();
     if (token) headers['X-XSRF-TOKEN'] = token;
-    if (body !== undefined && !(body instanceof FormData)) headers['Content-Type'] = 'application/json';
+    if (body !== undefined && !isRaw(body)) headers['Content-Type'] = 'application/json';
 
     const response = await fetch(`/api/${path.replace(/^\//, '')}`, {
         method,
         headers,
-        body: body === undefined || body instanceof FormData ? body : JSON.stringify(body),
+        body: body === undefined || isRaw(body) ? body : JSON.stringify(body),
         credentials: 'same-origin',
         signal,
     });

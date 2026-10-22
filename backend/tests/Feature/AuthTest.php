@@ -63,8 +63,11 @@ class AuthTest extends TestCase
 
     public function test_api_requires_authentication(): void
     {
-        $this->getJson('/api/auth/me')->assertUnauthorized();
         $this->getJson('/api/system/status')->assertUnauthorized();
+        $this->getJson('/api/imports')->assertUnauthorized();
+        $this->postJson('/api/uploads', ['file_name' => 'a.zip', 'size' => 1])->assertUnauthorized();
+        // "Who am I?" answers null instead of 401 (asked by the login page on every load).
+        $this->getJson('/api/auth/me')->assertOk()->assertExactJson(['data' => null]);
     }
 
     public function test_deactivated_user_is_logged_out_on_next_request(): void
@@ -73,7 +76,8 @@ class AuthTest extends TestCase
         $this->actingAs($user);
         $user->update(['is_active' => false]);
 
-        $this->getJson('/api/auth/me')->assertUnauthorized();
+        $this->getJson('/api/system/status')->assertUnauthorized();
+        $this->getJson('/api/auth/me')->assertExactJson(['data' => null]);
     }
 
     public function test_logout(): void

@@ -10,7 +10,7 @@ export function AuthProvider({ children }) {
     useEffect(() => {
         setUnauthorizedHandler(() => setUser(null));
         api('auth/me')
-            .then((res) => setUser(res.data))
+            .then((res) => setUser(res.data ?? null))
             .catch(() => setUser(null));
     }, []);
 

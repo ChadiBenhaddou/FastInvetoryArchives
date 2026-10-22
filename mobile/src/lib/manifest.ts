@@ -22,6 +22,7 @@ export interface Manifest {
     exported_at: string;
     sequence_range: { from: number | null; to: number | null; last_issued: number };
     voided_sequences: number[];
+    open_sequences: number[];
     boxes: {
         code: string;
         sequence: number;
@@ -52,6 +53,7 @@ export function buildManifest(input: {
     lastIssued: number;
     boxes: { box: Box; photos: Photo[] }[];
     voidedSequences: number[];
+    openSequences: number[];
 }): Manifest {
     const sequences = input.boxes.map(({ box }) => box.sequence);
 
@@ -68,6 +70,7 @@ export function buildManifest(input: {
             last_issued: input.lastIssued,
         },
         voided_sequences: [...input.voidedSequences].sort((a, b) => a - b),
+        open_sequences: [...input.openSequences].sort((a, b) => a - b),
         boxes: input.boxes.map(({ box, photos }) => {
             if (!box.closedAt) throw new Error(`Box ${box.code} is not closed`);
             if (photos[0]?.type !== 'code_photo') throw new Error(`Box ${box.code} has no code photo`);

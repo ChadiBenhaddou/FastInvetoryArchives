@@ -39,6 +39,8 @@ async function writeZip(
         lastIssued,
         boxes: withPhotos,
         voidedSequences,
+        // Tells the PC that the box being filled right now is not a missing box.
+        openSequences: (await db.boxesWithStatus('open')).map((b) => b.sequence),
     });
     const entries: ZipEntry[] = withPhotos.flatMap(({ photos }) => photos.map((p) => ({ source: p.path, name: p.path })));
 

@@ -10,4 +10,6 @@ enum ImportStatus: string
     /** Imported, but some boxes were conflicts or had errors: see the report. */
     case CompletedWithIssues = 'completed_with_issues';
     case Failed = 'failed';
+    /** This export_id had already been imported: nothing was done. */
+    case Duplicate = 'duplicate';
 }

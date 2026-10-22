@@ -33,7 +33,20 @@ docker run --rm archive-inventory/app:test
 # Application mobile : test de bout en bout (Chromium headless, caméra simulée).
 # Produit un ZIP d'export d'exemple dans .devdata\samples\
 powershell -ExecutionPolicy Bypass -File scripts\e2e-mobile.ps1
+
+# Interface PC (pile en marche) : connexion, appareil, import du ZIP d'exemple par glisser-déposer
+powershell -ExecutionPolicy Bypass -File scripts\e2e-desktop.ps1 -Password <mot de passe admin>
 ```
+
+## Import (PC)
+
+- **Glisser-déposer** dans la page *Import* (envoi par morceaux de 8 Mo, reprise automatique en cas de coupure).
+- **Dossier surveillé** `<ARCHIVE_HOST_ROOT>\import` : tout ZIP copié est importé dès que sa copie est terminée,
+  puis rangé dans `imported\` ou dans `failed\` avec un fichier `.erreur.txt` expliquant quoi faire.
+- Chaque boîte est vérifiée séparément (lettre de contrôle, empreinte SHA-256 de chaque photo) : une photo abîmée
+  ne bloque que sa boîte. Un export déjà importé est ignoré ; une boîte identique est ignorée ; un même code avec
+  d'autres photos est mis de côté comme **conflit** pour un administrateur.
+- Format du manifeste : [shared/manifest.schema.json](shared/manifest.schema.json).
 
 ## APK Android
 

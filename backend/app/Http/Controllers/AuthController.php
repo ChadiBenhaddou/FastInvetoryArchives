@@ -58,8 +58,14 @@ class AuthController extends Controller
         return response()->json(['ok' => true]);
     }
 
-    public function me(Request $request): UserResource
+    /** Current user, or {data: null} when logged out (not a 401: the login page asks this on every load). */
+    public function me(Request $request): UserResource|JsonResponse
     {
-        return new UserResource($request->user());
+        $user = $request->user();
+        if (! $user || ! $user->is_active) {
+            return response()->json(['data' => null]);
+        }
+
+        return new UserResource($user);
     }
 }

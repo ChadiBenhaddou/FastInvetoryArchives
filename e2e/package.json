@@ -1,0 +1,9 @@
+{
+    "name": "archive-e2e",
+    "private": true,
+    "type": "module",
+    "description": "End-to-end tests of the desktop admin against the running Docker stack",
+    "devDependencies": {
+        "playwright": "1.64.1"
+    }
+}

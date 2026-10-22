@@ -1,6 +1,6 @@
 {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
-    "$id": "archive-inventory/manifest/v1",
+    "$id": "urn:archive-inventory:manifest:v1",
     "title": "Phone export manifest (manifest.json at the root of the export ZIP)",
     "type": "object",
     "required": ["format_version", "export_id", "device_letter", "agent_name", "app_version", "exported_at", "sequence_range", "voided_sequences", "boxes"],
@@ -25,6 +25,11 @@
         },
         "voided_sequences": {
             "description": "Codes issued then cancelled on the phone: not gaps, the box was never filled.",
+            "type": "array",
+            "items": { "type": "integer", "minimum": 1, "maximum": 9999 }
+        },
+        "open_sequences": {
+            "description": "Boxes still open on the phone at export time: not gaps, they will come in a later export.",
             "type": "array",
             "items": { "type": "integer", "minimum": 1, "maximum": 9999 }
         },
