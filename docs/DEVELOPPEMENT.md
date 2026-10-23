@@ -97,6 +97,7 @@ Depuis Git Bash, sur la machine connectée (pile de développement démarrée ou
 # 1. Mettre le numéro de version dans VERSION (et mobile/package.json si l'APK change)
 bash bundle/build-bundle.sh                    # tests + images + modèles + APK + exemples
 bash bundle/build-bundle.sh --with-installers  # + Docker Desktop et WSL pour Windows (~1 Go)
+bash bundle/build-bundle.sh --with-ubuntu=noble    # + paquets Docker Engine (et dépendances) pour Ubuntu 24.04
 bash bundle/build-bundle.sh --skip-tests --skip-apk
 ```
 
@@ -110,7 +111,7 @@ les fichiers dépassent 4 Go, FAT32 ne convient pas).
 | `models/ollama-models.tar` | modèles d'IA (contenu du volume `ollama-models`) |
 | `android/` | APK + empreinte + guide d'installation sur téléphone |
 | `app/` | `docker-compose.yml` sans sections `build:`, scripts d'exploitation, exemples |
-| `prerequis/` | installeurs Docker Desktop et WSL (option `--with-installers`) |
+| `prerequis/` | installeurs Docker Desktop et WSL (`--with-installers`), paquets Docker pour Ubuntu (`--with-ubuntu=noble`) |
 | `SHA256SUMS` | contrôlé par l'installeur avant toute copie |
 
 Tester une installation sur la machine de développement (pile de dev arrêtée pour la mémoire) :

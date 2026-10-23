@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 # Installation (ou mise à jour) hors ligne de l'Inventaire des archives — Ubuntu.
-#   sudo ./install.sh [--dir /srv/archive] [--port 80] [--skip-verify]
+#   sudo bash install.sh [--dir /srv/archive] [--port 80] [--skip-verify] [--admin-password ...]
 # Une installation existante est détectée : MISE A JOUR (sauvegarde d'abord, données conservées).
 set -uo pipefail
 BUNDLE="$(cd "$(dirname "$0")" && pwd)"
 VERSION="$(tr -d '[:space:]' < "$BUNDLE/VERSION")"
-DIR=/srv/archive PORT=80 PROJECT=archive-inventory SKIP_VERIFY=0 SKIP_SUMS=0
+DIR=/srv/archive PORT=80 PROJECT=archive-inventory SKIP_VERIFY=0 SKIP_SUMS=0 ADMIN_PW=""
 while [ $# -gt 0 ]; do
   case "$1" in
     --dir) DIR="$2"; shift ;;
@@ -13,6 +13,7 @@ while [ $# -gt 0 ]; do
     --project) PROJECT="$2"; shift ;;
     --skip-verify) SKIP_VERIFY=1 ;;
     --skip-checksums) SKIP_SUMS=1 ;;
+    --admin-password) ADMIN_PW="$2"; shift ;;   # tests: no question asked
   esac
   shift
 done
@@ -73,17 +74,22 @@ ok "Tous les services sont prêts"
 
 if [ $UPDATE = 0 ]; then
   step "8. Compte administrateur"
-  compose exec app php artisan archive:create-admin --username=admin
+  if [ -n "$ADMIN_PW" ]; then
+    compose exec -T app php artisan archive:create-admin --username=admin --password="$ADMIN_PW"
+  else
+    compose exec app php artisan archive:create-admin --username=admin
+  fi
 fi
 
 step "9. Raccourci"
 url="http://localhost$([ "$PORT" = 80 ] || echo ":$PORT")"
-user_home="$(getent passwd "${SUDO_USER:-$USER}" | cut -d: -f6)"
+owner="${SUDO_USER:-${USER:-$(id -un)}}"
+user_home="$(getent passwd "$owner" | cut -d: -f6)"
 desktop="$user_home/Bureau"; [ -d "$desktop" ] || desktop="$user_home/Desktop"
 if [ -d "$desktop" ]; then
   printf '[Desktop Entry]\nType=Link\nName=Inventaire des archives\nURL=%s\nIcon=folder\n' "$url" > "$desktop/inventaire-archives.desktop"
   printf '[Desktop Entry]\nType=Application\nName=Sauvegarde vers USB\nExec=x-terminal-emulator -e %s/scripts/backup.sh\nTerminal=true\n' "$APP" > "$desktop/sauvegarde-usb.desktop"
-  chmod +x "$desktop"/*.desktop; chown "${SUDO_USER:-$USER}" "$desktop"/*.desktop 2>/dev/null || true
+  chmod +x "$desktop"/*.desktop; chown "$owner" "$desktop"/*.desktop 2>/dev/null || true
   ok "Raccourcis sur le bureau"
 fi
 

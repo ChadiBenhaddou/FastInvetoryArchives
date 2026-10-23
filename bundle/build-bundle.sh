@@ -139,6 +139,11 @@ if [ -n "$UBUNTU" ]; then
     [ -n "$deb" ] || { echo "no $pkg package for $UBUNTU"; exit 1; }
     curl -fL --retry 5 -o "$OUT/prerequis/ubuntu/$deb" "$pool$deb"
   done
+  # Their dependencies missing from a minimal install (iptables, nftables…), taken from a clean
+  # image of that release: latest versions, so installing them never downgrades anything.
+  docker run --rm -v "$OUT/prerequis/ubuntu:/u" "ubuntu:$UBUNTU" sh -c '
+    apt-get update -qq && apt-get install -y -qq --no-install-recommends --download-only /u/*.deb >/dev/null &&
+    mkdir -p /u/dependances && cp /var/cache/apt/archives/*.deb /u/dependances/'
 fi
 cat > "$OUT/prerequis/LISEZMOI.txt" <<'TXT'
 Windows 10/11 sans Internet (détail : LISEZMOI.md, section 4) :

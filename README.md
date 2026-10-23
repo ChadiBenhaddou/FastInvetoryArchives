@@ -160,14 +160,14 @@ Raccourcis créés sur le bureau :
 
 ## 5. Installer le PC (Ubuntu)
 
-1. Installer Docker Engine **hors ligne** : copier depuis une machine connectée les paquets `.deb` de la page
-   https://download.docker.com/linux/ubuntu/dists/ (dossier de la version d'Ubuntu, `pool/stable/amd64/`) :
-   `containerd.io`, `docker-ce-cli`, `docker-ce`, `docker-buildx-plugin`, `docker-compose-plugin`
-   (si la clé a été préparée avec cette option, ils sont dans `prerequis/ubuntu/`). Puis :
+1. Installer Docker Engine **hors ligne**. La clé contient, pour **Ubuntu 24.04**, les paquets Docker
+   (`prerequis/ubuntu/`) et leurs dépendances (`prerequis/ubuntu/dependances/` : iptables, nftables…) :
    ```bash
-   sudo dpkg -i prerequis/ubuntu/*.deb
+   sudo dpkg -i prerequis/ubuntu/dependances/*.deb prerequis/ubuntu/*.deb
    sudo systemctl enable --now docker
    ```
+   Pour une autre version d'Ubuntu, la clé doit être préparée pour elle (voir docs/DEVELOPPEMENT.md,
+   option `--with-ubuntu=<nom de code>`).
 2. Lancer l'installation (les fichiers d'une clé exFAT ne sont pas exécutables : passer par `bash`) :
    ```bash
    sudo bash install.sh                 # options : --dir /srv/archive --port 8080

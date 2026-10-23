@@ -62,6 +62,13 @@ def test_numbers_inside_arabic_lines_are_kept(engine):
         assert number in line, line
 
 
+def test_references_with_slashes_inside_arabic_lines(engine):
+    page = synth.render([("ar", "مقرر رقم 2019/77 بتاريخ 5 أبريل 2019"), ("ar", "ملف رقم 77/B بتاريخ 12/03/2020")])
+    text = run(engine, page).text
+    for reference in ("2019/77", "77/B", "12/03/2020"):
+        assert reference in text, text
+
+
 def test_reading_order_and_rtl_logical_order(engine):
     result = run(engine, synth.render(synth.PAGES["mixed"]))
     lines = result.text.splitlines()

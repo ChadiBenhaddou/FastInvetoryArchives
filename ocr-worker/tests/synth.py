@@ -41,9 +41,16 @@ def render(lines: list[tuple[str, str]], width: int = 1700) -> np.ndarray:
     y = 110
     for lang, text in lines:
         if lang == "ar":
-            font = ImageFont.truetype(FONT_AR, 46)
-            w = draw.textlength(text, font=font, direction="rtl", language="ar")
-            draw.text((width - 120 - w, y), text, font=font, fill=(25, 25, 25), direction="rtl", language="ar")
+            # Word by word from the right: Arabic words in the Naskh font, numbers and Latin
+            # tokens in the Latin one (Naskh has no "/" nor Latin letters: they would be boxes).
+            font_ar, font_la = ImageFont.truetype(FONT_AR, 46), ImageFont.truetype(FONT_LA, 42)
+            x = width - 120
+            for word in text.split(" "):
+                arabic = any("؀" <= c <= "ۿ" for c in word)
+                font, kw = (font_ar, {"direction": "rtl", "language": "ar"}) if arabic else (font_la, {})
+                x -= draw.textlength(word, font=font, **kw)
+                draw.text((x, y + (0 if arabic else 8)), word, font=font, fill=(25, 25, 25), **kw)
+                x -= draw.textlength(" ", font=font_ar)
         else:
             font = ImageFont.truetype(FONT_LA, 42)
             draw.text((120, y), text, font=font, fill=(25, 25, 25))

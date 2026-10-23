@@ -7,7 +7,8 @@ report+=("Vérification du $(date '+%Y-%m-%d %H:%M')")
 
 step "1. Réseau du PC"
 if [ "${1:-}" = --disable-network ] && command -v nmcli >/dev/null; then nmcli networking off && disabled=1 && sleep 3; fi
-if ip route | grep -q '^default'; then warn "Une route réseau est active (pour le test officiel : couper le réseau)"; report+=("Réseau : ACTIF")
+# /proc/net/route always exists (the "ip" tool may not): destination 00000000 = default route.
+if awk '$2 == "00000000" { found = 1 } END { exit !found }' /proc/net/route; then warn "Une route réseau est active (pour le test officiel : couper le réseau)"; report+=("Réseau : ACTIF")
 else ok "Aucune route réseau"; report+=("Réseau : coupé"); fi
 
 step "2. Services"
