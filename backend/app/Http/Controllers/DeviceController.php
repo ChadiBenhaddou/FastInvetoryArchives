@@ -3,7 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Http\Resources\DeviceResource;
+use App\Models\AuditLog;
 use App\Models\Device;
+use Illuminate\Http\JsonResponse;
 use App\Support\BoxCode;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -29,6 +31,27 @@ class DeviceController extends Controller
         ], ['letter.in' => 'Lettre non autorisée (les lettres O, I, S, B, Z sont exclues).']);
 
         return new DeviceResource(Device::create($data)->loadCount('boxes'));
+    }
+
+    /**
+     * Generates a new admin PIN for the phone (typed once in the phone's setup screen).
+     * Stored encrypted so an admin can look it up later; every reveal is audited.
+     */
+    public function generatePin(Device $device): JsonResponse
+    {
+        $pin = str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+        $device->forceFill(['admin_pin' => $pin])->saveQuietly();
+        AuditLog::record('pin_generated', $device);
+
+        return response()->json(['pin' => $pin]);
+    }
+
+    public function revealPin(Device $device): JsonResponse
+    {
+        abort_unless($device->admin_pin, 404, 'Aucun code PIN généré pour cet appareil.');
+        AuditLog::record('pin_revealed', $device);
+
+        return response()->json(['pin' => $device->admin_pin]);
     }
 
     public function update(Request $request, Device $device): DeviceResource

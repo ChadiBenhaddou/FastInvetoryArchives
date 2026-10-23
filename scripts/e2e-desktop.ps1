@@ -3,7 +3,8 @@
 param(
     [Parameter(Mandatory = $true)][string]$Password,
     [string]$User = 'admin',
-    [string]$Zip
+    [string]$Zip,
+    [string]$Script = 'desktop-import.mjs'
 )
 $root = Split-Path -Parent $PSScriptRoot
 if (-not $Zip) { $Zip = (Get-ChildItem "$root\.devdata\samples\*.zip" | Sort-Object LastWriteTime -Descending | Select-Object -First 1).FullName }
@@ -18,5 +19,5 @@ docker run --rm --network archive-inventory_frontend `
     -v archive-playwright:/root/.cache/ms-playwright `
     -e APP_URL=http://archive-inventory-app-1 -e ADMIN_USER=$User -e ADMIN_PASSWORD=$Password -e ZIP=$zipInRepo -e OUT_DIR=/repo/.devdata/samples `
     -w /repo/e2e archive-inventory/android-builder:1 `
-    sh -c "npm install --no-audit --no-fund --silent && npx playwright install --with-deps chromium >/dev/null && node desktop-import.mjs" 2>&1 | Out-Host
+    sh -c "npm install --no-audit --no-fund --silent && npx playwright install --with-deps chromium >/dev/null && node $Script" 2>&1 | Out-Host
 exit $LASTEXITCODE

@@ -38,8 +38,22 @@ return [
     ],
 
     'pipeline' => [
-        // Number of pipeline queue workers running in parallel (used for the time estimate).
+        // Queue workers running in parallel per step (used for the time estimate).
         'workers' => (int) env('PIPELINE_WORKERS', 2),
+        'extract_workers' => (int) env('EXTRACT_WORKERS', 1),
+    ],
+
+    // Local LLM (Ollama, internal network only) used to extract metadata from OCR text.
+    'llm' => [
+        'url' => env('OLLAMA_URL', 'http://ollama:11434'),
+        'model' => env('LLM_MODEL', 'qwen2.5:3b-instruct-q4_K_M'),
+        'timeout' => (int) env('LLM_TIMEOUT', 900),
+        'context' => (int) env('LLM_CONTEXT', 4096),
+        // Cover pages are short; longer OCR text is cut to keep CPU time per document bounded.
+        'max_chars' => (int) env('LLM_MAX_CHARS', 3000),
+        'max_output_tokens' => 450,
+        // CPU threads for the LLM (null = Ollama's default: half the logical CPUs).
+        'threads' => env('LLM_THREADS') ? (int) env('LLM_THREADS') : null,
     ],
 
     // A document goes to human review when any of these is true.

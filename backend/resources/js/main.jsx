@@ -7,6 +7,12 @@ import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
 import DevicesPage from './pages/DevicesPage';
 import ImportPage from './pages/ImportPage';
+import BoxesPage from './pages/BoxesPage';
+import BoxDetailPage from './pages/BoxDetailPage';
+import ReviewPage from './pages/ReviewPage';
+import SearchPage from './pages/SearchPage';
+import ConflictsPage from './pages/ConflictsPage';
+import BackupPage from './pages/BackupPage';
 import UsersPage from './pages/UsersPage';
 import NotFoundPage from './pages/NotFoundPage';
 
@@ -17,6 +23,8 @@ function RequireAuth({ children, role }) {
     if (role && user.role !== role) return <Navigate to="/" replace />;
     return children;
 }
+
+const admin = (element) => <RequireAuth role="admin">{element}</RequireAuth>;
 
 const router = createBrowserRouter([
     { path: '/login', element: <LoginPage /> },
@@ -30,22 +38,14 @@ const router = createBrowserRouter([
         children: [
             { index: true, element: <DashboardPage /> },
             { path: 'import', element: <ImportPage /> },
-            {
-                path: 'devices',
-                element: (
-                    <RequireAuth role="admin">
-                        <DevicesPage />
-                    </RequireAuth>
-                ),
-            },
-            {
-                path: 'users',
-                element: (
-                    <RequireAuth role="admin">
-                        <UsersPage />
-                    </RequireAuth>
-                ),
-            },
+            { path: 'boxes', element: <BoxesPage /> },
+            { path: 'boxes/:id', element: <BoxDetailPage /> },
+            { path: 'review', element: <ReviewPage /> },
+            { path: 'search', element: <SearchPage /> },
+            { path: 'conflicts', element: admin(<ConflictsPage />) },
+            { path: 'devices', element: admin(<DevicesPage />) },
+            { path: 'backup', element: admin(<BackupPage />) },
+            { path: 'users', element: admin(<UsersPage />) },
             { path: '*', element: <NotFoundPage /> },
         ],
     },

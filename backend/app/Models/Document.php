@@ -10,9 +10,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 #[Fillable([
     'box_id', 'image_id', 'ocr_text', 'ocr_blocks', 'language', 'ocr_confidence', 'is_handwritten', 'ocr_engine',
-    'extraction_status', 'doc_type', 'doc_date', 'reference_number', 'title', 'persons',
+    'extraction_status', 'extraction_model', 'doc_type', 'doc_date', 'reference_number', 'title', 'persons',
     'organizations', 'keywords', 'summary', 'extraction_confidence', 'needs_review', 'review_reasons',
-    'reviewed_by', 'reviewed_at', 'indexed_at',
+    'reviewed_by', 'reviewed_at', 'indexed_at', 'index_status',
 ])]
 class Document extends Model
 {

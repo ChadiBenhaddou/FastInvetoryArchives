@@ -9,6 +9,7 @@
         "php": "^8.3",
         "laravel/framework": "^13.17",
         "laravel/tinker": "^3.0",
+        "openspout/openspout": "^5.3",
         "opis/json-schema": "^2.6"
     },
     "require-dev": {

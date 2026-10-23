@@ -26,6 +26,11 @@ class SystemController extends Controller
                     ->get(rtrim(config('archive.meilisearch.host'), '/').'/health')
                     ->throw()),
                 'ocr' => $this->check(fn () => $ocr->healthy() ?: throw new \RuntimeException('OCR worker not ready')),
+                'llm' => $this->check(function () {
+                    $models = Http::timeout(3)->get(rtrim(config('archive.llm.url'), '/').'/api/tags')->throw()->json('models.*.name') ?? [];
+                    in_array(config('archive.llm.model'), $models, true)
+                        ?: throw new \RuntimeException('Modèle '.config('archive.llm.model').' absent (installé : '.implode(', ', $models).')');
+                }),
             ],
             'queue' => [
                 'pending' => DB::table('jobs')->count(),

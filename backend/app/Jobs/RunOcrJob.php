@@ -43,7 +43,7 @@ class RunOcrJob implements ShouldQueue
             return;
         }
         if ($image->ocr_status === OcrStatus::Done && ! $this->force) {
-            $pipeline->afterOcr($image);
+            $pipeline->checkBox($image->box_id); // re-delivered job: nothing to redo
 
             return;
         }

@@ -40,6 +40,14 @@ export default function DevicesPage() {
         load();
     }
 
+    const [pins, setPins] = useState({});
+    async function pin(device, generate) {
+        if (generate && device.has_pin && !window.confirm('Générer un nouveau code PIN ? (l\'ancien ne sera plus affiché ici ; le téléphone garde celui saisi à sa configuration)')) return;
+        const res = await api(`devices/${device.id}/pin`, { method: generate ? 'POST' : 'GET' });
+        setPins({ ...pins, [device.id]: res.pin });
+        if (generate) load();
+    }
+
     const input = 'rounded-md border border-stone-300 px-3 py-2 text-sm focus:border-amber-500 focus:outline-none';
 
     return (
@@ -70,6 +78,7 @@ export default function DevicesPage() {
                         <th className="px-4 py-3 font-medium">Boîtes reçues</th>
                         <th className="px-4 py-3 font-medium">Dernier n° reçu / émis</th>
                         <th className="px-4 py-3 font-medium">Numéros non reçus</th>
+                        <th className="px-4 py-3 font-medium">Code PIN du téléphone</th>
                         <th className="px-4 py-3" />
                     </tr>
                 </thead>
@@ -83,12 +92,20 @@ export default function DevicesPage() {
                                 {d.open_sequences.length > 0 && <span className="text-stone-500"> (en cours sur le téléphone : {d.open_sequences.join(', ')})</span>}
                             </td>
                             <td className="px-4 py-3 font-mono text-amber-700">{gapText(d.gaps) ?? <span className="font-sans text-stone-400">aucun</span>}</td>
+                            <td className="px-4 py-3 whitespace-nowrap">
+                                {pins[d.id] ? <span className="font-mono text-lg tracking-widest">{pins[d.id]}</span> : (
+                                    <span className="space-x-3">
+                                        {d.has_pin && <button onClick={() => pin(d, false)} className="text-amber-700 hover:underline">Afficher</button>}
+                                        <button onClick={() => pin(d, true)} className="text-amber-700 hover:underline">{d.has_pin ? 'Nouveau' : 'Générer'}</button>
+                                    </span>
+                                )}
+                            </td>
                             <td className="px-4 py-3 text-right">
                                 <button onClick={() => toggle(d)} className="text-amber-700 hover:underline">{d.is_active ? 'Désactiver' : 'Réactiver'}</button>
                             </td>
                         </tr>
                     ))}
-                    {!devices.length && <tr><td colSpan={6} className="px-4 py-6 text-center text-stone-500">Aucun appareil enregistré.</td></tr>}
+                    {!devices.length && <tr><td colSpan={7}className="px-4 py-6 text-center text-stone-500">Aucun appareil enregistré.</td></tr>}
                 </tbody>
             </table>
         </div>

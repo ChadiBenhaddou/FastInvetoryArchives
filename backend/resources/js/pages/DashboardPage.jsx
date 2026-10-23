@@ -1,12 +1,16 @@
 import { useEffect, useState } from 'react';
-import { CheckCircle2, XCircle } from 'lucide-react';
+import { Link } from 'react-router';
+import { AlertTriangle, CheckCircle2, XCircle } from 'lucide-react';
 import { api } from '../lib/api';
-import { formatBytes } from '../lib/format';
+import { formatBytes, formatDateTime } from '../lib/format';
+import { useAuth } from '../auth/AuthContext';
+import AgentChart from '../components/AgentChart';
 
 const SERVICE_LABELS = {
     database: 'Base de données (MySQL)',
     search: 'Moteur de recherche (Meilisearch)',
     ocr: 'OCR (PaddleOCR + Tesseract)',
+    llm: 'IA locale (Ollama)',
 };
 
 function formatDuration(seconds) {
@@ -27,14 +31,17 @@ function Card({ title, children }) {
 }
 
 export default function DashboardPage() {
+    const { user } = useAuth();
     const [status, setStatus] = useState(null);
     const [pipeline, setPipeline] = useState(null);
+    const [stats, setStats] = useState(null);
     const [error, setError] = useState(null);
 
     useEffect(() => {
         const load = () => {
             api('system/status').then(setStatus).catch((e) => setError(e.message));
             api('pipeline/status').then(setPipeline).catch(() => {});
+            api('dashboard').then(setStats).catch(() => {});
         };
         load();
         const timer = setInterval(load, 10000);
@@ -49,6 +56,22 @@ export default function DashboardPage() {
             <h1 className="text-2xl font-semibold">Tableau de bord</h1>
 
             {error && <p className="text-red-700">{error}</p>}
+
+            {stats?.backup.reminder && (
+                <div className="flex items-center gap-3 rounded-xl bg-amber-50 p-4 text-amber-900 ring-1 ring-amber-200">
+                    <AlertTriangle className="size-5 shrink-0" />
+                    <span className="flex-1">
+                        Aucune sauvegarde depuis plus de 24 h
+                        {stats.backup.last_success_at ? ` (dernière : ${formatDateTime(stats.backup.last_success_at)})` : ' (jamais)'}.
+                    </span>
+                    {user.role === 'admin' && <Link to="/backup" className="font-medium underline">Sauvegarder</Link>}
+                </div>
+            )}
+            {stats?.conflicts_pending > 0 && user.role === 'admin' && (
+                <Link to="/conflicts" className="flex items-center gap-3 rounded-xl bg-amber-50 p-4 text-amber-900 ring-1 ring-amber-200">
+                    <AlertTriangle className="size-5 shrink-0" /> {stats.conflicts_pending} conflit(s) de code de boîte à examiner.
+                </Link>
+            )}
 
             {pipeline && (
                 <div className="grid gap-4 md:grid-cols-3">
@@ -81,6 +104,29 @@ export default function DashboardPage() {
                     <Card title="Révision">
                         <p className="text-3xl font-semibold">{pipeline.needs_review}</p>
                         <p className="text-sm text-stone-500">document(s) signalé(s) pour vérification humaine</p>
+                    </Card>
+                </div>
+            )}
+
+            {stats && (
+                <div className="grid gap-4 lg:grid-cols-3">
+                    <section className="rounded-xl bg-white p-5 shadow-sm lg:col-span-2">
+                        <h2 className="mb-3 text-sm font-medium text-stone-500">Photos par agent et par jour (14 derniers jours)</h2>
+                        <AgentChart days={stats.days} data={stats.photos_per_agent_per_day} />
+                    </section>
+                    <Card title="Numéros de boîtes non reçus">
+                        {stats.gaps.length ? (
+                            <ul className="space-y-2 text-sm">
+                                {stats.gaps.map((g) => (
+                                    <li key={g.device}>
+                                        <span className="font-medium">Appareil {g.device}</span> <span className="text-stone-500">({g.label})</span>
+                                        <div className="font-mono text-amber-700">
+                                            {g.gaps.map((x) => (x.count === 1 ? x.first_code : `${x.first_code} → ${x.last_code} (${x.count})`)).join(', ')}
+                                        </div>
+                                    </li>
+                                ))}
+                            </ul>
+                        ) : <p className="flex items-center gap-2 text-sm text-stone-600"><CheckCircle2 className="size-4 text-green-600" /> Aucun : toutes les boîtes numérotées ont été reçues.</p>}
                     </Card>
                 </div>
             )}

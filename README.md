@@ -66,6 +66,31 @@ powershell -ExecutionPolicy Bypass -File scripts\e2e-desktop.ps1 -Password <mot 
   `docker run --rm --network none archive-inventory/ocr-worker:test`.
 - ZIP d'exemple avec de vraies pages FR/AR : `docker run --rm -v ${PWD}/.devdata/samples:/out archive-inventory/ocr-worker:test python -m tests.make_sample_export /out K`.
 
+## Extraction (IA locale) et recherche
+
+- **Ollama** (réseau interne, aucun accès Internet) avec **Qwen2.5 3B** par défaut (`LLM_MODEL` dans `.env`) ;
+  le 7B est aussi fourni : plus précis sur les titres, ~3 à 5 fois plus lent sur processeur.
+  Avec une carte NVIDIA : `docker compose -f docker-compose.yml -f docker-compose.gpu.yml up -d` et `LLM_MODEL=qwen2.5:7b-instruct-q4_K_M`.
+- Le modèle reçoit le prompt d'archiviste et un **schéma JSON** (il ne peut pas répondre autre chose) ;
+  réponse invalide → 1 nouvel essai → sinon document à réviser. Toute valeur absente du texte OCR
+  (référence, date, personne, organisme) est **écartée** et fait baisser la confiance.
+- Un document est **cherchable dès la fin de l'OCR** ; l'extraction (plus lente) complète ensuite ses champs.
+- Mesurer la vitesse sur le PC cible : `docker compose exec app php artisan archive:llm-benchmark --model=qwen2.5:3b-instruct-q4_K_M --model=qwen2.5:7b-instruct-q4_K_M`.
+- Changer de modèle puis réextraire : modifier `LLM_MODEL`, `docker compose up -d`, puis
+  `docker compose exec app php artisan archive:reprocess --all --extraction`.
+- **Meilisearch** : arabe (variantes ة/ه, أ/ا…) et français (accents, fautes de frappe) ; reconstruire l'index :
+  `docker compose exec app php artisan archive:search-setup --reindex`.
+
+## Interface (révision, recherche, export, sauvegarde)
+
+- **Révision** : photo du code écrit à côté du code enregistré, chaque document à côté de son texte et de ses
+  champs modifiables. Raccourcis : `Ctrl+Entrée` valider et suivant, `Ctrl+S` enregistrer, `Alt+←/→`.
+- **Correction d'un code de boîte** (admin) : photos déplacées, index mis à jour, journal d'audit.
+- **Conflits** (admin) : garder l'existant, créer une nouvelle boîte avec le bon code, ou remplacer.
+- **Export** (admin) : inventaire Excel (feuilles *Boîtes* et *Documents*) ou CSV, téléchargé où l'on veut (clé USB).
+- **Sauvegarde** : chaque nuit à 2 h + bouton ; base (dump SQL), index de recherche, liste de contrôle des photos
+  dans `backups\<date>\`. La copie vers un disque USB se fait avec le script de sauvegarde (livrable 7).
+
 ## APK Android
 
 ```powershell

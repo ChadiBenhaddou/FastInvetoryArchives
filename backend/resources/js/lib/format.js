@@ -9,3 +9,13 @@ export function formatBytes(bytes) {
 export function formatDateTime(iso) {
     return iso ? new Date(iso).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' }) : '—';
 }
+
+export function formatDate(isoDay) {
+    if (!isoDay) return '—';
+    const [y, m, d] = isoDay.split('-');
+    return `${d}/${m}/${y}`;
+}
+
+export const percent = (v) => (v === null || v === undefined ? '—' : `${Math.round(v * 100)} %`);
+
+export const location = (box) => [box.room, box.shelf, box.row].filter(Boolean).join(' · ') || '—';

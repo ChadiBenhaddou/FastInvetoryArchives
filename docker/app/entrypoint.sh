@@ -14,6 +14,8 @@ mkdir -p "$ARCHIVE_ROOT/import" "$ARCHIVE_ROOT/processing" "$ARCHIVE_ROOT/import
          "$ARCHIVE_ROOT/failed" "$ARCHIVE_ROOT/storage" "$ARCHIVE_ROOT/backups"
 chown -R www-data:www-data storage bootstrap/cache
 chown www-data:www-data "$ARCHIVE_ROOT" "$ARCHIVE_ROOT"/* 2>/dev/null || true
+# Shared with the Meilisearch container (which writes its dumps there).
+mkdir -p "$ARCHIVE_ROOT/backups/.search-dumps" && chmod 0777 "$ARCHIVE_ROOT/backups/.search-dumps"
 
 $AS_WWW php artisan optimize --quiet
 
@@ -29,6 +31,8 @@ case "$ROLE" in
     # Applying migrations on start keeps install and update the same path:
     # a new image + restart is all an update needs.
     $AS_WWW php artisan migrate --force
+    # Search index settings (idempotent). Not fatal: the app works while Meilisearch starts.
+    $AS_WWW php artisan archive:search-setup || true
     exec supervisord -c /etc/supervisor/supervisord.conf
     ;;
   queue)
