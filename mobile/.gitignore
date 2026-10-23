@@ -12,3 +12,4 @@ android/app/build/
 android/app/release/
 android/local.properties
 android/capacitor-cordova-android-plugins/build/
+release/

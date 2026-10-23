@@ -3,7 +3,7 @@
 // Usage: scripts/e2e-desktop.(ps1|sh)  (env: APP_URL, ADMIN_USER, ADMIN_PASSWORD, ZIP)
 import { chromium } from 'playwright';
 
-const URL = process.env.APP_URL ?? 'http://archive-inventory-app-1';
+const URL = process.env.APP_URL ?? 'http://archive-inventory-gateway-1';
 const ZIP = process.env.ZIP;
 const OUT = process.env.OUT_DIR ?? '/tmp';
 

@@ -1,5 +1,5 @@
 # Builds the signed Android APK inside Docker (Node 22 + JDK 21 + Android SDK).
-# Run on the CONNECTED development machine; output: mobile\dist\apk\archive-capture-<version>.apk
+# Run on the CONNECTED development machine; output: mobile\release\archive-capture-<version>.apk
 # Note: docker writes progress to stderr, so failures are detected with $LASTEXITCODE
 # (ErrorActionPreference=Stop would abort on the first progress line in Windows PowerShell).
 $root = Split-Path -Parent $PSScriptRoot

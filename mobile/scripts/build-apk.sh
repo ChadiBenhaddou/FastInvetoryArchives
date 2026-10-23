@@ -34,9 +34,9 @@ chmod +x gradlew
 cd ..
 
 VERSION=$(node -p "require('./package.json').version")
-mkdir -p dist/apk
-OUT=dist/apk/archive-capture-$VERSION.apk
+mkdir -p release
+OUT=release/archive-capture-$VERSION.apk
 cp android/app/build/outputs/apk/release/app-release.apk "$OUT"
-sha256sum "$OUT" | sed 's|dist/apk/||' > "$OUT.sha256"
+sha256sum "$OUT" | sed 's|release/||' > "$OUT.sha256"
 echo ">> APK ready: mobile/$OUT"
 cat "$OUT.sha256"

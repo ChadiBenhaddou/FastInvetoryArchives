@@ -18,6 +18,7 @@ COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 COPY docker/app/php.ini /usr/local/etc/php/conf.d/zz-archive.ini
 COPY docker/app/php-fpm.conf /usr/local/etc/php-fpm.d/zz-archive.conf
 COPY docker/app/nginx.conf /etc/nginx/conf.d/archive.conf
+COPY docker/app/gateway.conf /etc/nginx/gateway.conf
 COPY docker/app/supervisord.conf /etc/supervisor/conf.d/archive.conf
 COPY docker/app/entrypoint.sh /usr/local/bin/entrypoint
 RUN sed -i 's/\r$//' /usr/local/bin/entrypoint && chmod +x /usr/local/bin/entrypoint

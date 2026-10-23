@@ -1,10 +1,14 @@
 #!/bin/sh
-# Starts the container in one of three roles: app (nginx + php-fpm),
-# queue (job worker) or scheduler (periodic tasks).
+# Starts the container in one of four roles: app (nginx + php-fpm),
+# queue (job worker), scheduler (periodic tasks) or gateway (reverse proxy only).
 set -e
 
 cd /var/www/html
 ROLE="${CONTAINER_ROLE:-app}"
+
+if [ "$ROLE" = gateway ]; then
+  exec nginx -c /etc/nginx/gateway.conf -g "daemon off;"
+fi
 AS_WWW="setpriv --reuid=www-data --regid=www-data --init-groups"
 
 # The storage volume persists across image updates, so recreate its layout.

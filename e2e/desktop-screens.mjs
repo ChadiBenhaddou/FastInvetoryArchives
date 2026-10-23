@@ -3,7 +3,7 @@
 // Usage: scripts/e2e-desktop.(ps1|sh) -Script desktop-screens.mjs
 import { chromium } from 'playwright';
 
-const URL = process.env.APP_URL ?? 'http://archive-inventory-app-1';
+const URL = process.env.APP_URL ?? 'http://archive-inventory-gateway-1';
 const OUT = process.env.OUT_DIR ?? '/tmp';
 const browser = await chromium.launch();
 const context = await browser.newContext({ viewport: { width: 1440, height: 1000 }, acceptDownloads: true });

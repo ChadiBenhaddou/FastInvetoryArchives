@@ -7,7 +7,6 @@ Run in the OCR test image (it has the Arabic fonts):
 """
 
 import hashlib
-import io
 import json
 import sys
 import uuid
@@ -77,9 +76,13 @@ def jpeg(img: np.ndarray) -> bytes:
     return cv2.imencode(".jpg", img, [cv2.IMWRITE_JPEG_QUALITY, 80])[1].tobytes()
 
 
-def main(out_dir: str, device: str = "K") -> None:
+def main(out_dir: str, device: str = "K", selftest: bool = False) -> None:
+    # Self-test variant (used by the verify script): one box numbered 9999, far from real
+    # numbering; the search must then find "Benali" and "الداخلية".
+    plan = [[("fr", None), ("ar", "photo")]] if selftest else BOXES
+    first = 9999 if selftest else 1
     boxes, files = [], {}
-    for i, pages in enumerate(BOXES, start=1):
+    for i, pages in enumerate(plan, start=first):
         code = box_code(device, i)
         images = [code_photo(code)] + [page_image(name, how) for name, how in pages]
         photos = []
@@ -90,23 +93,26 @@ def main(out_dir: str, device: str = "K") -> None:
             photos.append({
                 "sequence": seq, "type": "code_photo" if seq == 0 else "document", "file": name,
                 "sha256": hashlib.sha256(data).hexdigest(), "width": img.shape[1], "height": img.shape[0],
-                "taken_at": f"2026-10-22T10:{i:02d}:{seq:02d}+01:00",
+                "taken_at": f"2026-10-22T10:{i % 60:02d}:{seq:02d}+01:00",
                 "quality": {"sharpness": 120.0, "brightness": 180.0, "override": False, "cropped": False},
             })
         boxes.append({
             "code": code, "sequence": i,
-            "location": {"room": "Salle 3", "shelf": f"É{i}", "row": None},
-            "created_at": f"2026-10-22T10:{i:02d}:00+01:00", "closed_at": f"2026-10-22T10:{i:02d}:59+01:00",
+            "location": {"room": "Salle 3", "shelf": f"É{i % 100}", "row": None},
+            "created_at": f"2026-10-22T10:{i % 60:02d}:00+01:00", "closed_at": f"2026-10-22T10:{i % 60:02d}:59+01:00",
             "photos": photos,
         })
 
+    last = first + len(plan) - 1
     manifest = {
         "format_version": 1, "export_id": str(uuid.uuid4()), "device_letter": device,
-        "agent_name": "Agent Exemple", "app_version": "1.0.0", "exported_at": "2026-10-22T18:00:00+01:00",
-        "sequence_range": {"from": 1, "to": len(BOXES), "last_issued": len(BOXES)},
+        "agent_name": "Vérification" if selftest else "Agent Exemple", "app_version": "1.0.0",
+        "exported_at": "2026-10-22T18:00:00+01:00",
+        "sequence_range": {"from": first, "to": last, "last_issued": last},
         "voided_sequences": [], "open_sequences": [], "boxes": boxes,
     }
-    path = f"{out_dir}/{device}_20261022_1800_{len(BOXES)}boxes_exemple.zip"
+    name = "selftest.zip" if selftest else f"{device}_20261022_1800_{len(plan)}boxes_exemple.zip"
+    path = f"{out_dir}/{name}"
     with zipfile.ZipFile(path, "w", zipfile.ZIP_STORED) as z:
         z.writestr("manifest.json", json.dumps(manifest, ensure_ascii=False, indent=2))
         for name, data in files.items():
@@ -115,4 +121,5 @@ def main(out_dir: str, device: str = "K") -> None:
 
 
 if __name__ == "__main__":
-    main(sys.argv[1], *(sys.argv[2:3]))
+    args = [a for a in sys.argv[1:] if a != "--selftest"]
+    main(args[0], *(args[1:2]), selftest="--selftest" in sys.argv)

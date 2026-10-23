@@ -1,6 +1,6 @@
 #!/bin/sh
 # Builds the signed Android APK inside Docker (Node 22 + JDK 21 + Android SDK).
-# Run on the CONNECTED development machine; output: mobile/dist/apk/archive-capture-<version>.apk
+# Run on the CONNECTED development machine; output: mobile/release/archive-capture-<version>.apk
 set -e
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 

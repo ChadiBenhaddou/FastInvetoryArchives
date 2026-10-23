@@ -1,103 +1,394 @@
-# Inventaire rapide des archives (100 % hors ligne)
+# Inventaire rapide des archives — guide complet
 
-> Le README complet en français (installation hors ligne, téléphones, flux quotidien,
-> sauvegarde, dépannage) est le livrable 8. Ce fichier décrit l'état actuel pour les développeurs.
+Application **100 % hors ligne** pour inventorier des archives en arabe et en français :
+des téléphones Android photographient les dossiers de chaque boîte, un PC sans Internet lit les photos (OCR),
+en extrait les informations utiles avec une IA locale et permet de réviser, chercher et exporter l'inventaire.
 
-## Structure
+> **Aucune donnée ne quitte le PC.** Ni le PC ni les téléphones n'ont besoin d'Internet, à aucun moment :
+> pas de compte, pas de nuage, pas de mise à jour automatique, pas de statistiques envoyées.
+> Les photos passent du téléphone au PC **par câble USB**.
 
-| Dossier | Contenu |
+Sommaire
+
+1. [Comment ça marche](#1-comment-ça-marche)
+2. [Matériel nécessaire](#2-matériel-nécessaire)
+3. [Contenu de la clé USB](#3-contenu-de-la-clé-usb)
+4. [Installer le PC (Windows)](#4-installer-le-pc-windows)
+5. [Installer le PC (Ubuntu)](#5-installer-le-pc-ubuntu)
+6. [Vérifier l'installation, réseau coupé](#6-vérifier-linstallation-réseau-coupé)
+7. [Préparer les téléphones](#7-préparer-les-téléphones)
+8. [Le travail au quotidien](#8-le-travail-au-quotidien)
+9. [Comptes et rôles](#9-comptes-et-rôles)
+10. [Sauvegarde et restauration](#10-sauvegarde-et-restauration)
+11. [Mise à jour](#11-mise-à-jour)
+12. [Dépannage](#12-dépannage)
+13. [Réglages avancés](#13-réglages-avancés)
+14. [Licences](#14-licences)
+
+---
+
+## 1. Comment ça marche
+
+```
+  SUR LE TERRAIN (téléphones)                         AU BUREAU (PC hors ligne)
+  ───────────────────────────                         ─────────────────────────
+  1. « Nouvelle boîte » : le téléphone donne un code   5. Import du ZIP (glisser-déposer
+     (ex. A-0123-N), l'agent l'écrit sur la boîte         ou dossier surveillé)
+  2. Photo du code écrit                               6. Lecture automatique (OCR arabe + français)
+  3. Photo de la couverture de chaque dossier          7. Extraction par l'IA locale : type, date,
+     (contrôle de netteté et de lumière immédiat)         référence, titre, personnes, organismes
+  4. « Exporter » : UN fichier ZIP par session ──câble USB──▶ 8. Révision par une personne
+                                                       9. Recherche, inventaire Excel, sauvegarde
+```
+
+- Chaque **boîte** reçoit un code unique `LETTRE-NUMÉRO-CONTRÔLE`, par exemple `A-0123-N` :
+  la lettre identifie le téléphone, le numéro est donné par le téléphone, la dernière lettre est une
+  **lettre de contrôle** qui détecte les erreurs de recopie (un chiffre faux, deux chiffres inversés,
+  une mauvaise lettre d'appareil). Les lettres O, I, S, B et Z ne sont jamais utilisées (trop proches de 0, 1, 5, 8, 2).
+- Le PC compare le code **photographié** sur la boîte au code **enregistré** : la personne qui révise voit
+  les deux côte à côte.
+- Un document est **cherchable dès qu'il a été lu** (quelques secondes) ; l'extraction par l'IA, plus lente,
+  complète ses champs ensuite.
+
+## 2. Matériel nécessaire
+
+| | Minimum | Conseillé |
+|---|---|---|
+| **PC** | 16 Go de mémoire, processeur 4 cœurs / 8 threads (Intel Core i5 de 10e génération ou plus récent) | 32 Go, 8 cœurs, ou une carte graphique NVIDIA (8 Go) pour une IA 5 à 10 fois plus rapide |
+| Disque | SSD, 40 Go libres pour l'application + **~0,4 Mo par photo** (100 000 photos ≈ 40 Go) | SSD de 500 Go |
+| Système | Windows 10/11 64 bits (Pro, Entreprise ou Famille) avec virtualisation activée dans le BIOS, **ou** Ubuntu 22.04 / 24.04 | |
+| **Téléphones** | Android 7 ou plus récent, appareil photo avec mise au point automatique, 8 Go libres | Android 10+, 64 Go |
+| Câbles | un câble USB de données par téléphone (pas seulement de charge) | |
+| Sauvegarde | un disque dur USB externe (exFAT ou NTFS) | deux, gardés à deux endroits différents |
+
+Le PC est prévu pour ne faire que ce travail. Ordres de grandeur mesurés sur un portable Core i5-11300H
+(4 cœurs, 16 Go) — les mesurer sur le PC réel (voir [§ 13](#13-réglages-avancés)) :
+
+| Étape | Vitesse | Par jour (24 h) |
+|---|---|---|
+| Import (vérification + copie) | quelques secondes par boîte | — |
+| Lecture OCR | ~6 s par photo et par processus (2 en parallèle) | ~25 000 photos |
+| Extraction par l'IA (processeur seul) | voir [§ 13](#13-réglages-avancés) | |
+
+La recherche et la révision n'attendent pas l'IA : si les téléphones produisent plus de photos par jour que
+l'IA ne peut en traiter, les documents restent cherchables par leur texte et l'IA rattrape son retard la nuit
+et le week-end.
+
+## 3. Contenu de la clé USB
+
+Copier le dossier `ArchiveInventory-<version>` sur une clé ou un disque **exFAT ou NTFS** (certains fichiers
+dépassent 4 Go : FAT32 ne convient pas).
+
+| | |
 |---|---|
-| `backend/` | Laravel 13 (PHP 8.3) + interface d'administration React/Vite/Tailwind (`resources/js`) |
-| `docker/` | Image applicative (nginx + php-fpm, file d'attente, planificateur), config MySQL |
-| `shared/` | Spécification du code de boîte + vecteurs de test communs PHP / mobile |
-| `scripts/` | Génération du `.env` avec secrets aléatoires |
-| `mobile/` | Application Android (React + Capacitor) : capture, contrôle qualité, export ZIP. Installation : [mobile/INSTALL-TELEPHONE.md](mobile/INSTALL-TELEPHONE.md) |
-| `ocr-worker/` | Service OCR Python (livrable 4) |
+| `install.ps1` / `install.sh` | installation **et** mise à jour (Windows / Ubuntu) |
+| `LISEZMOI.md` | ce guide |
+| `prerequis\` | installeurs de WSL et de Docker Desktop pour Windows (si fournis) |
+| `android\` | l'application des téléphones (`archive-capture-<version>.apk`) et son guide d'installation |
+| `images\`, `models\`, `app\` | logiciels, modèles d'IA et scripts (ne pas modifier) |
+| `SHA256SUMS` | empreintes : l'installeur vérifie que rien n'a été abîmé pendant la copie |
 
-## Démarrage (machine de développement)
+## 4. Installer le PC (Windows)
 
+Compter environ une heure, dont la plupart en attente. Toutes les étapes se font **sans Internet**.
+
+### 4.1 Pré-requis (une seule fois)
+
+1. **Virtualisation** : dans le BIOS/UEFI du PC, activer *Intel VT-x* (ou *AMD-V / SVM*). Vérifier dans le
+   Gestionnaire des tâches → Performance → Processeur : « Virtualisation : Activé ».
+2. **Fonctions Windows** : ouvrir PowerShell **en administrateur** et lancer :
+   ```powershell
+   dism.exe /online /enable-feature /featurename:Microsoft-Windows-Subsystem-Linux /all /norestart
+   dism.exe /online /enable-feature /featurename:VirtualMachinePlatform /all /norestart
+   ```
+   puis **redémarrer**.
+3. **WSL** : installer `prerequis\wsl.<version>.x64.msi` (double-clic), redémarrer.
+4. **Docker Desktop** : installer `prerequis\Docker Desktop Installer.exe` en laissant cochée l'option
+   *Use WSL 2 instead of Hyper-V*. Redémarrer, lancer Docker Desktop, refuser la connexion à un compte
+   (*Continue without signing in* / *Skip*), attendre **« Engine running »** en bas à gauche.
+5. Dans Docker Desktop → **Settings** (roue dentée) :
+   - *General* : cocher **Start Docker Desktop when you sign in to your computer** (indispensable : l'application
+     redémarre seule avec Docker) ; décocher *Send usage statistics*.
+   - *Software updates* : décocher *Automatically check for updates*.
+   - *Apply & restart*.
+
+> **Mémoire.** Par défaut Docker utilise la moitié de la mémoire du PC (8 Go sur 16 Go), ce qui suffit.
+> Sur un PC de 32 Go, on peut lui en donner plus : créer le fichier `C:\Users\<utilisateur>\.wslconfig`
+> contenant `[wsl2]` puis `memory=20GB` sur la ligne suivante, et redémarrer le PC.
+
+> **Licence Docker Desktop** : voir [§ 14](#14-licences) — gratuit pour les petites structures uniquement.
+
+### 4.2 Installation
+
+1. Ouvrir le dossier de la clé USB, clic droit sur **`install.ps1`** → **Exécuter avec PowerShell**.
+   (Si Windows bloque le script : ouvrir PowerShell et taper
+   `powershell -ExecutionPolicy Bypass -File E:\ArchiveInventory-1.0.0\install.ps1`, en remplaçant `E:` par la
+   lettre de la clé.)
+2. L'installeur, dans l'ordre :
+   1. vérifie le PC (Docker démarré, mémoire, espace disque) ;
+   2. contrôle chaque fichier de la clé (SHA-256) ;
+   3. copie l'application dans `C:\ArchiveInventory\app` et crée les mots de passe internes (aléatoires) ;
+   4. charge les logiciels et les modèles d'IA (10 à 20 minutes) ;
+   5. démarre tout et attend que chaque service soit prêt ;
+   6. demande le **mot de passe du compte `admin`** (8 caractères minimum — le noter en lieu sûr) ;
+   7. crée les raccourcis sur le bureau ;
+   8. lance la vérification complète ([§ 6](#6-vérifier-linstallation-réseau-coupé)).
+3. Ouvrir le raccourci **Inventaire des archives** (ou http://localhost dans le navigateur) et se connecter
+   avec `admin`.
+
+Options : `-InstallDir D:\Archives` (autre dossier), `-HttpPort 8080` (si le port 80 est déjà pris).
+
+Raccourcis créés sur le bureau :
+
+| Raccourci | |
+|---|---|
+| **Inventaire des archives** | ouvre l'application dans le navigateur |
+| **Sauvegarde vers USB** | sauvegarde complète vers un disque externe ([§ 10](#10-sauvegarde-et-restauration)) |
+| **Inventaire - Démarrer** / **Arrêter** | normalement inutiles : l'application démarre avec Docker Desktop |
+| **Inventaire - Vérifier** | refait la vérification complète |
+
+### 4.3 Les dossiers sur le PC
+
+| Dossier (`C:\ArchiveInventory\…`) | Contenu |
+|---|---|
+| `import\` | **dossier surveillé** : tout ZIP copié ici est importé automatiquement |
+| `imported\` | ZIP importés (conservés) |
+| `failed\` | ZIP refusés, avec un fichier `.erreur.txt` qui explique quoi faire |
+| `storage\` | les photos, rangées par boîte |
+| `backups\` | sauvegardes de la base (une par nuit, les 7 dernières sont gardées) |
+| `app\` | l'application (ne pas modifier, sauf `app\.env` sur instruction) |
+
+## 5. Installer le PC (Ubuntu)
+
+1. Installer Docker Engine **hors ligne** : copier depuis une machine connectée les paquets `.deb` de la page
+   https://download.docker.com/linux/ubuntu/dists/ (dossier de la version d'Ubuntu, `pool/stable/amd64/`) :
+   `containerd.io`, `docker-ce-cli`, `docker-ce`, `docker-buildx-plugin`, `docker-compose-plugin`
+   (si la clé a été préparée avec cette option, ils sont dans `prerequis/ubuntu/`). Puis :
+   ```bash
+   sudo dpkg -i prerequis/ubuntu/*.deb
+   sudo systemctl enable --now docker
+   ```
+2. Lancer l'installation (les fichiers d'une clé exFAT ne sont pas exécutables : passer par `bash`) :
+   ```bash
+   sudo bash install.sh                 # options : --dir /srv/archive --port 8080
+   ```
+   Mêmes étapes que sous Windows. Les données sont dans `/srv/archive`, l'application dans `/srv/archive/app`.
+3. Scripts d'exploitation : `sudo bash /srv/archive/app/scripts/<backup|restore|start|stop|verify>.sh`.
+
+## 6. Vérifier l'installation, réseau coupé
+
+La vérification prouve que tout fonctionne **sans réseau** : elle importe un export d'exemple (une page en
+français, une page en arabe), attend la lecture OCR et l'extraction par l'IA, cherche « Benali » et « الداخلية »,
+puis **supprime toutes les données de test**. Elle contrôle aussi qu'aucun service ne peut joindre Internet.
+
+1. **Débrancher le câble réseau et couper le Wi-Fi** du PC (ou lancer le script avec `-DisableNetwork` depuis un
+   PowerShell administrateur : les cartes réseau sont désactivées pendant le test puis réactivées).
+2. Double-cliquer sur **Inventaire - Vérifier** (Ubuntu : `sudo bash /srv/archive/app/scripts/verify.sh`).
+3. Attendre « **VÉRIFICATION RÉUSSIE** » (5 à 15 minutes : l'IA charge son modèle au premier passage).
+   Le rapport est enregistré dans `C:\ArchiveInventory\verification-<date>.txt`.
+
+En cas d'échec, le rapport indique l'étape en cause (voir [§ 12](#12-dépannage)).
+
+## 7. Préparer les téléphones
+
+Pour chaque téléphone :
+
+1. **Sur le PC** (administrateur) → **Appareils** → choisir une **lettre** libre et un nom
+   (« Téléphone salle 2 »…) → **Enregistrer**. Une lettre = un téléphone, pour toujours.
+2. Dans la ligne de l'appareil → **Code PIN du téléphone** → **Générer** puis **Afficher** : c'est le code
+   administrateur du téléphone (6 à 8 chiffres). Il protège les réglages du téléphone ; on peut le réafficher plus tard.
+3. **Installer l'application** sur le téléphone par câble : voir `android\INSTALL-TELEPHONE.md` sur la clé
+   (copier l'APK dans *Téléchargements*, l'ouvrir avec l'application *Fichiers*, autoriser l'installation).
+4. **Premier lancement** : langue (français / arabe), nom de l'agent, **la lettre de l'étape 1**, numéro de la
+   prochaine boîte (**laisser 1** pour un téléphone neuf), le code PIN de l'étape 2 (deux fois).
+5. Autoriser l'appareil photo à la première prise de vue.
+
+Le téléphone peut rester en **mode avion** en permanence : l'application n'utilise ni le réseau, ni la localisation,
+ni aucun compte.
+
+> **Téléphone réinstallé ou remplacé** : soit lui donner une nouvelle lettre, soit reprendre la même lettre en
+> saisissant comme « prochaine boîte » le numéro qui suit le **Dernier n° reçu / émis** affiché dans
+> *Appareils* — sinon des codes déjà utilisés seraient redonnés (le PC les signalerait comme conflits).
+
+## 8. Le travail au quotidien
+
+### 8.1 Sur le terrain : photographier une boîte
+
+1. **Nouvelle boîte** → choisir l'emplacement (salle, étagère, rangée — facultatif) → **Générer le code**.
+2. **Écrire le code au marqueur, en grandes lettres, sur DEUX côtés de la boîte.**
+3. **C'est écrit — photographier le code** : photographier le code écrit (le PC le comparera au code enregistré).
+4. Photographier la **couverture ou la première page de chaque dossier**, à plat, à 30-40 cm, sans ombre.
+   - Chaque photo est contrôlée tout de suite. « **Photo floue** » ou « **Photo trop sombre** » : **Reprendre**
+     (tenir le téléphone immobile, allumer la **Lampe**). « Garder quand même » n'est à utiliser que si le
+     document lui-même est flou ou abîmé.
+   - Les pages sont recadrées et redressées automatiquement.
+5. **Terminer** puis **Fermer la boîte**. Une boîte fermée peut être rouverte tant qu'elle n'est pas exportée.
+
+Une seule boîte est ouverte à la fois. Pour abandonner une boîte (code mal écrit…) : **Annuler cette boîte**, puis
+**barrer le code** écrit sur le carton ; le PC sera informé que ce numéro est annulé.
+
+### 8.2 Fin de session : exporter et transférer
+
+1. Sur le téléphone : **Exporter** → **Créer le fichier d'export**. Un seul fichier ZIP contient toutes les boîtes
+   fermées et pas encore exportées (`A_20261022_1536_12boxes.zip`).
+2. Brancher le téléphone au PC avec le câble USB, choisir **Transfert de fichiers** sur le téléphone.
+3. Dans l'explorateur Windows : téléphone → `Documents\ArchiveInventory\exports` → copier le ZIP
+   **directement dans `C:\ArchiveInventory\import`** (dossier surveillé : l'import démarre seul quand la copie
+   est finie) — ou bien le glisser sur la page **Import** de l'application.
+4. Sur le PC, page **Import** : attendre « **Terminé** » et ouvrir **Voir le rapport** (boîtes et photos ajoutées,
+   doublons ignorés, conflits, numéros manquants).
+5. **Seulement après avoir vu l'import réussi sur le PC** : sur le téléphone, **Historique** → **Confirmer l'import et
+   libérer l'espace**. Les photos de cet export sont alors effacées du téléphone.
+
+Tant que l'étape 5 n'est pas faite, le téléphone garde tout : en cas de problème on peut **Ré-exporter**.
+Importer deux fois le même fichier est sans danger (« Déjà importé », rien n'est modifié).
+
+### 8.3 Au bureau : révision
+
+Après l'import, chaque boîte passe par **En traitement** puis **À réviser** ; le **Tableau de bord** montre
+l'avancement et le temps restant estimé.
+
+Page **Révision** (une boîte après l'autre) :
+
+1. **Vérifier le code** : la photo du code écrit est à côté du code enregistré. S'ils diffèrent, un administrateur
+   corrige le code de la boîte (les photos suivent, tout est tracé dans le journal).
+2. Pour chaque document : la photo à gauche, le texte lu et les champs extraits à droite (type, date, référence,
+   titre, personnes, organismes, mots-clés). Corriger si besoin.
+   Les documents à regarder en priorité sont signalés : *Lecture (OCR) peu sûre*, *Manuscrit probable*,
+   *Aucun texte détecté*, *Extraction peu sûre*…
+3. **Valider et suivant**. Raccourcis clavier : `Ctrl+Entrée` valider et suivant, `Ctrl+S` enregistrer,
+   `Alt+←` / `Alt+→` document précédent / suivant.
+
+Quand tous ses documents sont validés, la boîte passe à **Terminée**.
+
+### 8.4 Recherche et inventaire
+
+- **Recherche** : en arabe ou en français, dans le texte des documents et leurs champs ; tolère les fautes de
+  frappe, les accents et les variantes d'écriture arabe (ة/ه, أ/إ/ا, ى/ي). Filtres par type de document,
+  période (années), salle, agent et boîte. Les mots trouvés sont surlignés ; un clic ouvre la boîte.
+- **Boîtes** : liste filtrable ; **Inventaire Excel** (administrateur) télécharge l'inventaire complet
+  (feuilles *Boîtes* et *Documents*) ; aussi en CSV.
+
+### 8.5 Conflits
+
+Si un même code arrive avec des photos différentes (téléphone réinstallé, code recopié…), la boîte n'est pas
+mélangée : elle est mise de côté dans **Conflits** (administrateur), qui montre les deux versions. Choisir
+**Garder l'existant**, **Créer la boîte** sous un autre code, ou **Remplacer**.
+
+## 9. Comptes et rôles
+
+Page **Utilisateurs** (administrateur) : créer un compte par personne.
+
+| Rôle | Peut |
+|---|---|
+| **Réviseur** | importer, réviser, chercher, consulter |
+| **Administrateur** | tout, plus : appareils et codes PIN, utilisateurs, correction de codes de boîte, conflits, export Excel, sauvegardes |
+
+Un compte peut être **désactivé** (jamais supprimé, pour garder le journal). Toutes les modifications sont
+enregistrées dans un journal d'audit (qui, quoi, quand).
+
+Mot de passe administrateur oublié : sur le PC, dans PowerShell :
 ```powershell
-powershell -ExecutionPolicy Bypass -File scripts\init-env.ps1 -ArchiveRoot C:\ArchiveInventory
-docker compose up -d --build
+cd C:\ArchiveInventory\app
 docker compose exec app php artisan archive:create-admin --username=admin
 ```
+(redéfinit le mot de passe du compte `admin`, ou crée un autre administrateur avec `--username=autre`).
 
-Puis ouvrir http://localhost.
+## 10. Sauvegarde et restauration
 
-## Tests
+**Automatique** : chaque nuit à 2 h, le PC sauvegarde la base de données et l'index de recherche dans
+`C:\ArchiveInventory\backups\` (7 dernières gardées). Page **Sauvegarde** : état, **Sauvegarder maintenant**.
+Cela protège contre une erreur de manipulation, **pas contre la panne du disque** : il faut aussi une copie externe.
 
-```powershell
-docker build -f docker/app/Dockerfile --target test -t archive-inventory/app:test .
-docker run --rm archive-inventory/app:test
+**Vers un disque USB — au moins une fois par semaine**, et à garder hors du bureau :
 
-# Application mobile : test de bout en bout (Chromium headless, caméra simulée).
-# Produit un ZIP d'export d'exemple dans .devdata\samples\
-powershell -ExecutionPolicy Bypass -File scripts\e2e-mobile.ps1
+1. Brancher le disque USB, double-cliquer sur **Sauvegarde vers USB**, choisir le disque.
+2. Le script fait une sauvegarde à jour, puis copie dans `<disque>\ArchiveInventory-Sauvegarde\` :
+   la base et l'index (`base\<date>\`), **toutes les photos** (`photos\`, seules les nouvelles sont copiées après
+   la première fois) et la clé de l'application (`app-key.txt`).
+3. Attendre « Terminé », puis éjecter le disque proprement.
 
-# Interface PC (pile en marche) : connexion, appareil, import du ZIP d'exemple par glisser-déposer
-powershell -ExecutionPolicy Bypass -File scripts\e2e-desktop.ps1 -Password <mot de passe admin>
-```
+> Le disque de sauvegarde contient **toutes les données**, sans chiffrement : le ranger sous clé.
+> Pour un chiffrement, utiliser BitLocker To Go sur le disque (clic droit → Activer BitLocker).
 
-## Import (PC)
-
-- **Glisser-déposer** dans la page *Import* (envoi par morceaux de 8 Mo, reprise automatique en cas de coupure).
-- **Dossier surveillé** `<ARCHIVE_HOST_ROOT>\import` : tout ZIP copié est importé dès que sa copie est terminée,
-  puis rangé dans `imported\` ou dans `failed\` avec un fichier `.erreur.txt` expliquant quoi faire.
-- Chaque boîte est vérifiée séparément (lettre de contrôle, empreinte SHA-256 de chaque photo) : une photo abîmée
-  ne bloque que sa boîte. Un export déjà importé est ignoré ; une boîte identique est ignorée ; un même code avec
-  d'autres photos est mis de côté comme **conflit** pour un administrateur.
-- Format du manifeste : [shared/manifest.schema.json](shared/manifest.schema.json).
-
-## Traitement (OCR)
-
-- Service `ocr-worker` (Python/FastAPI, réseau interne uniquement) : **PaddleOCR PP-OCRv5** (détection +
-  reconnaissance arabe et latine), **Tesseract 5** (`ara+fra`, modèles *tessdata_best*) en secours.
-  Tous les modèles sont dans l'image : aucun téléchargement à l'exécution.
-- Par photo : redressement 90/180/270°, correction de l'inclinaison, normalisation du contraste, débruitage des
-  photos granuleuses ; chaque ligne est lue par les deux modèles et l'écriture de la ligne décide.
-  Les chiffres occidentaux dans les lignes arabes sont relus mot par mot (le modèle arabe a tendance à les omettre).
-- Pipeline Laravel : à l'import d'une boîte, une tâche `RunOcrJob` par photo de document (file `ocr`, workers
-  `pipeline`) ; la boîte passe en **« à réviser »** quand toutes ses photos sont traitées. Une photo en échec après
-  3 essais est signalée pour révision, sans bloquer sa boîte.
-- Révision demandée si : confiance OCR < 0,6, écriture manuscrite probable, page sans texte, OCR en échec.
-- Relancer : `docker compose exec app php artisan archive:reprocess --failed` (ou des codes de boîtes, ou `--all`).
-- Tests OCR (réseau coupé) :
-  `docker build --target test -t archive-inventory/ocr-worker:test ocr-worker` puis
-  `docker run --rm --network none archive-inventory/ocr-worker:test`.
-- ZIP d'exemple avec de vraies pages FR/AR : `docker run --rm -v ${PWD}/.devdata/samples:/out archive-inventory/ocr-worker:test python -m tests.make_sample_export /out K`.
-
-## Extraction (IA locale) et recherche
-
-- **Ollama** (réseau interne, aucun accès Internet) avec **Qwen2.5 3B** par défaut (`LLM_MODEL` dans `.env`) ;
-  le 7B est aussi fourni : plus précis sur les titres, ~3 à 5 fois plus lent sur processeur.
-  Avec une carte NVIDIA : `docker compose -f docker-compose.yml -f docker-compose.gpu.yml up -d` et `LLM_MODEL=qwen2.5:7b-instruct-q4_K_M`.
-- Le modèle reçoit le prompt d'archiviste et un **schéma JSON** (il ne peut pas répondre autre chose) ;
-  réponse invalide → 1 nouvel essai → sinon document à réviser. Toute valeur absente du texte OCR
-  (référence, date, personne, organisme) est **écartée** et fait baisser la confiance.
-- Un document est **cherchable dès la fin de l'OCR** ; l'extraction (plus lente) complète ensuite ses champs.
-- Mesurer la vitesse sur le PC cible : `docker compose exec app php artisan archive:llm-benchmark --model=qwen2.5:3b-instruct-q4_K_M --model=qwen2.5:7b-instruct-q4_K_M`.
-- Changer de modèle puis réextraire : modifier `LLM_MODEL`, `docker compose up -d`, puis
-  `docker compose exec app php artisan archive:reprocess --all --extraction`.
-- **Meilisearch** : arabe (variantes ة/ه, أ/ا…) et français (accents, fautes de frappe) ; reconstruire l'index :
-  `docker compose exec app php artisan archive:search-setup --reindex`.
-
-## Interface (révision, recherche, export, sauvegarde)
-
-- **Révision** : photo du code écrit à côté du code enregistré, chaque document à côté de son texte et de ses
-  champs modifiables. Raccourcis : `Ctrl+Entrée` valider et suivant, `Ctrl+S` enregistrer, `Alt+←/→`.
-- **Correction d'un code de boîte** (admin) : photos déplacées, index mis à jour, journal d'audit.
-- **Conflits** (admin) : garder l'existant, créer une nouvelle boîte avec le bon code, ou remplacer.
-- **Export** (admin) : inventaire Excel (feuilles *Boîtes* et *Documents*) ou CSV, téléchargé où l'on veut (clé USB).
-- **Sauvegarde** : chaque nuit à 2 h + bouton ; base (dump SQL), index de recherche, liste de contrôle des photos
-  dans `backups\<date>\`. La copie vers un disque USB se fait avec le script de sauvegarde (livrable 7).
-
-## APK Android
+**Restaurer** (après une panne, ou sur un nouveau PC installé avec la clé USB) :
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File scripts\build-apk.ps1
-# → mobile\dist\apk\archive-capture-<version>.apk (+ .sha256)
+powershell -ExecutionPolicy Bypass -File C:\ArchiveInventory\app\scripts\restore.ps1 -From E:\ArchiveInventory-Sauvegarde
 ```
 
-Tout se construit dans Docker (Node 22, JDK 21, SDK Android 36). Au premier lancement, la clé de signature
-est créée dans `mobile\keystore\` : **la sauvegarder hors de la machine** — sans elle, aucune mise à jour
-de l'application ne pourra être installée sur les téléphones existants.
+La dernière sauvegarde est prise (ou `-Backup 2026-10-22_020000` pour en choisir une). Taper `RESTAURER` pour
+confirmer : la base actuelle est remplacée, les photos recopiées, la clé reprise, l'index reconstruit.
+Ubuntu : `sudo bash /srv/archive/app/scripts/restore.sh /media/<disque>/ArchiveInventory-Sauvegarde`.
+
+## 11. Mise à jour
+
+Une nouvelle version arrive sur une nouvelle clé USB. Lancer son **`install.ps1`** (ou `update.ps1`) comme pour
+l'installation : une installation existante est détectée, **une sauvegarde est faite d'abord**, les données,
+mots de passe et comptes sont conservés, puis la vérification est relancée.
+
+Téléphones : installer le nouvel APK par-dessus l'ancien (voir `android\INSTALL-TELEPHONE.md`) ; les boîtes et le
+compteur sont conservés.
+
+## 12. Dépannage
+
+| Problème | Que faire |
+|---|---|
+| Le navigateur affiche « **L'application démarre…** » | Attendre : la page se recharge seule (1 à 3 minutes après le démarrage du PC). |
+| La page ne s'ouvre pas du tout | Docker Desktop n'est pas démarré : l'ouvrir (menu Démarrer), attendre « Engine running ». Il démarre seul à l'ouverture de session si l'option du [§ 4.1](#41-pré-requis-une-seule-fois) est cochée. Puis **Inventaire - Démarrer**. |
+| Un ZIP est allé dans `failed\` | Lire le fichier `.erreur.txt` à côté : il dit quoi faire. Ensuite, recopier le ZIP dans `import\`. |
+| « Appareil « X » inconnu » | Enregistrer la lettre dans **Appareils** (§ 7), puis réimporter le ZIP. |
+| « ZIP incomplet ou abîmé » | La copie a été interrompue : recopier depuis le téléphone (ou **Ré-exporter** dans son Historique). |
+| Une photo est signalée abîmée | Seule sa boîte est touchée ; ré-exporter depuis le téléphone et réimporter. |
+| **Numéros non reçus** dans *Appareils* | Des boîtes numérotées par le téléphone ne sont pas encore arrivées : un export oublié sur le téléphone, ou des boîtes annulées. |
+| Des boîtes restent **En traitement** longtemps | Normal si l'IA a du retard (voir le temps restant sur le Tableau de bord). Si rien n'avance : **Inventaire - Arrêter** puis **Démarrer**. Pour relancer les documents en échec : `docker compose exec app php artisan archive:reprocess --failed` (dans `C:\ArchiveInventory\app`). |
+| Un document récent n'est pas trouvé | La recherche porte sur le texte lu : vérifier que la boîte n'est plus *En traitement*. Reconstruire l'index : `docker compose exec app php artisan archive:search-setup --reindex`. |
+| Le téléphone refuse beaucoup de photos (« floue ») | Plus de lumière (**Lampe**), téléphone immobile, 30-40 cm. Si le téléphone est en cause, l'administrateur peut baisser la **Netteté minimale** dans les **Réglages** du téléphone (code PIN). |
+| Téléphone plein | Exporter, vérifier l'import sur le PC, puis **Confirmer l'import et libérer l'espace** (§ 8.2). |
+| Code PIN du téléphone oublié | PC → **Appareils** → **Afficher**. |
+| Le PC est lent | Une seule application doit tourner. L'IA occupe le processeur en continu tant qu'il reste des documents : c'est normal. |
+| Disque presque plein | L'espace libre est affiché sur le Tableau de bord. Faire une sauvegarde USB, puis libérer de la place ou agrandir le disque. Ne jamais supprimer de fichiers dans `storage\`. |
+| La vérification échoue à « Isolement » | Un service a pu joindre Internet : ne pas utiliser le PC, prévenir la personne qui a installé. |
+
+Journaux techniques : `docker compose logs --tail 200 app` (dans `C:\ArchiveInventory\app`).
+
+## 13. Réglages avancés
+
+Les réglages sont dans `C:\ArchiveInventory\app\.env` (à modifier avec le Bloc-notes, puis double-cliquer sur
+**Inventaire - Démarrer** pour les appliquer). **Ne jamais modifier les mots de passe et clés qui s'y trouvent.**
+
+| Réglage | Défaut | |
+|---|---|---|
+| `HTTP_PORT` | `80` | port de l'application (http://localhost:PORT) |
+| `LLM_MODEL` | voir ci-dessous | modèle d'IA utilisé pour l'extraction |
+| `PIPELINE_WORKERS` | `2` | tâches de lecture OCR / indexation en parallèle |
+| `OCR_PROCESSES` | `2` | processus OCR (~1 Go de mémoire chacun) — 3 ou 4 sur un PC de 32 Go |
+
+### Modèle d'IA
+
+<!-- MODEL-TABLE -->
+
+Mesurer la vitesse réelle sur le PC (sur les derniers documents importés, rien n'est modifié) :
+
+```powershell
+cd C:\ArchiveInventory\app
+docker compose exec app php artisan archive:llm-benchmark --show
+```
+
+Changer de modèle : modifier `LLM_MODEL` dans `.env`, **Inventaire - Démarrer**, puis, pour réextraire les documents
+déjà traités : `docker compose exec app php artisan archive:reprocess --all --extraction`.
+
+**Carte graphique NVIDIA** (pilote NVIDIA installé ; sous Windows, Docker Desktop la prend en charge via WSL) :
+
+```powershell
+cd C:\ArchiveInventory\app
+docker compose -f docker-compose.yml -f docker-compose.gpu.yml up -d
+```
+
+## 14. Licences
+
+<!-- LICENSES -->
+
+---
+
+Pour les développeurs (construction des images, de l'APK et de cette clé USB) : [docs/DEVELOPPEMENT.md](docs/DEVELOPPEMENT.md).
