@@ -19,24 +19,30 @@ class LlmExtractor
 You are an archivist. From the OCR text of one administrative document (Arabic and/or French, may contain OCR errors), extract ONLY information that is present. Return strict JSON:
 {doc_type, title, doc_date (YYYY-MM-DD or null), reference_number, persons[], organizations[], keywords[] (max 8), summary (1 sentence, in French), language, confidence (0-1)}.
 Never invent values; use null when unknown. Do not translate names.
-doc_type: a short French noun such as arrêté, décision, décret, circulaire, note de service, correspondance, procès-verbal, rapport, demande, attestation, contrat, facture, état, liste, autre.
+doc_type: one of the allowed French values, also for Arabic documents (قرار = arrêté, مقرر = décision, مرسوم = décret, دورية = circulaire, مذكرة = note de service, رسالة/مراسلة = correspondance, محضر = procès-verbal, تقرير = rapport, طلب = demande, شهادة = attestation, عقد = contrat, فاتورة = facture, لائحة = liste).
 reference_number: the number or code only, as written (e.g. 2019/145), without any other word.
 keywords: 3 to 5. summary: one short sentence (25 words at most).
 language: "ar", "fr" or "mixed". confidence: how sure you are that the extracted values are correct.
 TXT;
 
+    /** Same list as the review form (DocumentForm.jsx), where a reviewer may still type another type. */
+    public const DOC_TYPES = ['arrêté', 'décision', 'décret', 'circulaire', 'note de service', 'correspondance',
+        'procès-verbal', 'rapport', 'demande', 'attestation', 'contrat', 'facture', 'état', 'liste', 'autre'];
+
+    // Length limits become part of the grammar Ollama enforces: a model that starts repeating
+    // itself inside a string is forced to close it instead of running into max_output_tokens.
     public const SCHEMA = [
         'type' => 'object',
         'properties' => [
-            'doc_type' => ['type' => ['string', 'null']],
-            'title' => ['type' => ['string', 'null']],
-            'doc_date' => ['type' => ['string', 'null']],
-            'reference_number' => ['type' => ['string', 'null']],
-            'persons' => ['type' => 'array', 'items' => ['type' => 'string']],
-            'organizations' => ['type' => 'array', 'items' => ['type' => 'string']],
-            'keywords' => ['type' => 'array', 'items' => ['type' => 'string'], 'maxItems' => 8],
-            'summary' => ['type' => ['string', 'null']],
-            'language' => ['type' => ['string', 'null']],
+            'doc_type' => ['enum' => [...self::DOC_TYPES, null]],
+            'title' => ['anyOf' => [['type' => 'string', 'maxLength' => 160], ['type' => 'null']]],
+            'doc_date' => ['anyOf' => [['type' => 'string', 'maxLength' => 10], ['type' => 'null']]],
+            'reference_number' => ['anyOf' => [['type' => 'string', 'maxLength' => 40], ['type' => 'null']]],
+            'persons' => ['type' => 'array', 'items' => ['type' => 'string', 'maxLength' => 80], 'maxItems' => 10],
+            'organizations' => ['type' => 'array', 'items' => ['type' => 'string', 'maxLength' => 100], 'maxItems' => 10],
+            'keywords' => ['type' => 'array', 'items' => ['type' => 'string', 'maxLength' => 40], 'maxItems' => 8],
+            'summary' => ['anyOf' => [['type' => 'string', 'maxLength' => 250], ['type' => 'null']]],
+            'language' => ['enum' => ['ar', 'fr', 'mixed', null]],
             'confidence' => ['type' => 'number'],
         ],
         'required' => ['doc_type', 'title', 'doc_date', 'reference_number', 'persons', 'organizations', 'keywords', 'summary', 'language', 'confidence'],
@@ -119,6 +125,26 @@ TXT;
     }
 
     /**
+     * One sentence was asked for. A summary that ran into the schema's length limit has the
+     * model rambling on after it: keep the first sentence. A short abbreviation ("M.", "n.")
+     * is not a sentence end.
+     */
+    public static function firstSentence(?string $summary): ?string
+    {
+        if ($summary === null || mb_strlen($summary) < 200) {
+            return $summary;
+        }
+        preg_match_all('/(\S+)[.!?](?=\s)/u', $summary, $m, PREG_OFFSET_CAPTURE);
+        foreach ($m[0] as $i => [$match, $offset]) {
+            if (mb_strlen($m[1][$i][0]) > 3) {
+                return substr($summary, 0, $offset + strlen($match));
+            }
+        }
+
+        return $summary;
+    }
+
+    /**
      * Normalizes the model answer and drops what is not supported by the OCR text.
      *
      * @return array{0: array, 1: string[]}
@@ -185,7 +211,7 @@ TXT;
             'persons' => $persons,
             'organizations' => $organizations,
             'keywords' => $list($d['keywords'] ?? [], 8),
-            'summary' => $str($d['summary'] ?? null, 1000),
+            'summary' => self::firstSentence($str($d['summary'] ?? null, 1000)),
             'language' => in_array($language, ['ar', 'fr', 'mixed'], true) ? $language : null,
             'extraction_confidence' => $confidence,
         ], $dropped];

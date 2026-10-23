@@ -68,7 +68,7 @@ Le PC est prévu pour ne faire que ce travail. Ordres de grandeur mesurés sur u
 |---|---|---|
 | Import (vérification + copie) | quelques secondes par boîte | — |
 | Lecture OCR | ~6 s par photo et par processus (2 en parallèle) | ~25 000 photos |
-| Extraction par l'IA (processeur seul) | voir [§ 13](#13-réglages-avancés) | |
+| Extraction par l'IA (processeur seul) | ~40 à 70 s par document selon le modèle ([§ 13](#13-réglages-avancés)) | ~1 300 à 2 150 documents |
 
 La recherche et la révision n'attendent pas l'IA : si les téléphones produisent plus de photos par jour que
 l'IA ne peut en traiter, les documents restent cherchables par leur texte et l'IA rattrape son retard la nuit
@@ -318,7 +318,11 @@ powershell -ExecutionPolicy Bypass -File C:\ArchiveInventory\app\scripts\restore
 ```
 
 La dernière sauvegarde est prise (ou `-Backup 2026-10-22_020000` pour en choisir une). Taper `RESTAURER` pour
-confirmer : la base actuelle est remplacée, les photos recopiées, la clé reprise, l'index reconstruit.
+confirmer : **la base actuelle est d'abord sauvegardée** dans `C:\ArchiveInventory\backups\`, puis remplacée ;
+les photos sont recopiées, la clé reprise, l'index reconstruit.
+
+Revenir en arrière (mauvaise sauvegarde choisie…) ou reprendre une sauvegarde de nuit du PC :
+`restore.ps1 -From C:\ArchiveInventory\backups -Backup <date>` (les photos du PC ne sont pas touchées).
 Ubuntu : `sudo bash /srv/archive/app/scripts/restore.sh /media/<disque>/ArchiveInventory-Sauvegarde`.
 
 ## 11. Mise à jour
@@ -366,7 +370,19 @@ Les réglages sont dans `C:\ArchiveInventory\app\.env` (à modifier avec le Bloc
 
 ### Modèle d'IA
 
-<!-- MODEL-TABLE -->
+Deux modèles sont fournis, tous deux sous licence libre autorisant l'usage professionnel :
+
+| `LLM_MODEL` | Licence | Temps par document* | Par jour (24 h)* | Qualité |
+|---|---|---|---|---|
+| `qwen3:4b-instruct-2507-q4_K_M` (**défaut**) | Apache 2.0 | ~67 s | ~1 300 | la meilleure : type, date, référence et titre justes sur tous les essais, titres arabes gardés en arabe |
+| `phi4-mini:3.8b-q4_K_M` | MIT | ~40 s | ~2 150 | plus rapide ; se trompe plus souvent sur le type de document (ex. « décret » pour un arrêté) |
+
+\* processeur seul, portable Core i5-11300H ; un PC de bureau récent est plus rapide, une carte NVIDIA 5 à 10 fois plus.
+
+Quel que soit le modèle, l'IA est contrainte par un schéma (elle ne peut répondre qu'au format attendu, avec
+un type de document pris dans la liste), et **toute valeur absente du texte du document est écartée** —
+le modèle ne peut pas « inventer » une date, une référence ou un nom. Les documents incertains sont signalés
+pour la révision.
 
 Mesurer la vitesse réelle sur le PC (sur les derniers documents importés, rien n'est modifié) :
 
@@ -387,7 +403,28 @@ docker compose -f docker-compose.yml -f docker-compose.gpu.yml up -d
 
 ## 14. Licences
 
-<!-- LICENSES -->
+**Docker Desktop (Windows) — à vérifier avant le déploiement.** Docker Desktop n'est gratuit que pour
+l'usage personnel, l'enseignement, les projets open source non commerciaux et les **petites entreprises (moins
+de 250 salariés ET moins de 10 millions de dollars de chiffre d'affaires annuel)**. Une administration ou un
+organisme plus grand doit acheter un abonnement Docker (Pro, Team ou Business) pour chaque PC qui l'utilise.
+Consulter les conditions en vigueur sur docker.com avant l'installation. **Alternative gratuite :** installer le PC
+sous **Ubuntu** ([§ 5](#5-installer-le-pc-ubuntu)) — Docker Engine y est libre (Apache 2.0) et l'application
+fonctionne à l'identique.
+
+Tous les autres composants sont libres et utilisables par une administration, sans redevance :
+
+| Composant | Licence |
+|---|---|
+| Modèle d'IA Qwen3-4B-Instruct-2507 (Alibaba Cloud) | Apache 2.0 |
+| Modèle d'IA Phi-4-mini (Microsoft) | MIT |
+| Ollama (exécution des modèles) | MIT |
+| PaddleOCR, PaddlePaddle (lecture du texte) | Apache 2.0 |
+| Tesseract OCR | Apache 2.0 |
+| OpenCV | Apache 2.0 |
+| Meilisearch (recherche, édition communautaire) | MIT |
+| MySQL Community Server | GPL v2 |
+| Laravel, React, Tailwind CSS, Capacitor | MIT |
+| Docker Engine (Ubuntu) | Apache 2.0 |
 
 ---
 

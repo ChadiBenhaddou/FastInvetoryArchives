@@ -15,10 +15,10 @@ param(
 $ErrorActionPreference = 'Continue'
 $bundle = $PSScriptRoot
 $version = (Get-Content (Join-Path $bundle 'VERSION') -Raw).Trim()
-$appDir = Join-Path $InstallDir 'app'
+$installAppDir = Join-Path $InstallDir 'app'
 . (Join-Path $bundle 'app\scripts\common.ps1')
-$script:AppDir = $appDir
-$script:EnvFile = Join-Path $appDir '.env'
+$script:AppDir = $installAppDir
+$script:EnvFile = Join-Path $installAppDir '.env'
 $isUpdate = Test-Path $script:EnvFile
 
 Write-Host "Inventaire des archives $version — $(if ($isUpdate) { 'MISE A JOUR' } else { 'INSTALLATION' }) dans $InstallDir" -ForegroundColor Cyan
@@ -65,15 +65,15 @@ if ($isUpdate) {
 
 # ---------------------------------------------------------------- 4. Fichiers de l'application
 Write-Step '4. Copie des fichiers de l''application'
-New-Item -ItemType Directory -Force -Path $appDir | Out-Null
-Copy-Item -Path (Join-Path $bundle 'app\*') -Destination $appDir -Recurse -Force
+New-Item -ItemType Directory -Force -Path $installAppDir | Out-Null
+Copy-Item -Path (Join-Path $bundle 'app\*') -Destination $installAppDir -Recurse -Force
 if (-not $isUpdate) {
-    & (Join-Path $appDir 'scripts\init-env.ps1') -ArchiveRoot $InstallDir -Force | Out-Host
+    & (Join-Path $installAppDir 'scripts\init-env.ps1') -ArchiveRoot $InstallDir -Force | Out-Host
     Set-DotEnvValue 'HTTP_PORT' $HttpPort
     Set-DotEnvValue 'COMPOSE_PROJECT_NAME' $ProjectName
 }
 Set-DotEnvValue 'APP_VERSION' $version
-Write-Ok "Application copiée dans $appDir"
+Write-Ok "Application copiée dans $installAppDir"
 
 # ---------------------------------------------------------------- 5. Images Docker
 Write-Step '5. Chargement des images (plusieurs minutes)'
@@ -115,7 +115,7 @@ if (-not $isUpdate) {
         Invoke-Compose -Arguments @('exec', '-T', 'app', 'php', 'artisan', 'archive:create-admin', '--username=admin', "--password=$AdminPassword") | Out-Null
     } else {
         Write-Host '   Choisir le mot de passe du compte « admin » (8 caractères minimum).'
-        & docker compose --project-directory $appDir -f (Join-Path $appDir 'docker-compose.yml') exec app php artisan archive:create-admin --username=admin
+        & docker compose --project-directory $installAppDir -f (Join-Path $installAppDir 'docker-compose.yml') exec app php artisan archive:create-admin --username=admin
     }
 }
 
@@ -134,8 +134,8 @@ foreach ($s in @(
 )) {
     $lnk = $shell.CreateShortcut((Join-Path $desktop "$($s.Name).lnk"))
     $lnk.TargetPath = 'powershell.exe'
-    $lnk.Arguments = "-NoProfile -ExecutionPolicy Bypass -File `"$(Join-Path $appDir "scripts\$($s.Script)")`""
-    $lnk.WorkingDirectory = $appDir
+    $lnk.Arguments = "-NoProfile -ExecutionPolicy Bypass -File `"$(Join-Path $installAppDir "scripts\$($s.Script)")`""
+    $lnk.WorkingDirectory = $installAppDir
     $lnk.Save()
 }
 Write-Ok "Raccourcis créés (adresse : $url)"
@@ -143,7 +143,7 @@ Write-Ok "Raccourcis créés (adresse : $url)"
 # ---------------------------------------------------------------- 10. Vérification
 if (-not $SkipVerify) {
     Write-Step '10. Vérification complète (import d''un exemple, OCR, IA, recherche)'
-    & (Join-Path $appDir 'scripts\verify.ps1')
+    & (Join-Path $installAppDir 'scripts\verify.ps1')
     if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 }
 

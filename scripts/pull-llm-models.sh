@@ -7,7 +7,7 @@
 set -e
 OLLAMA_IMAGE=ollama/ollama:0.40.8
 VOLUME=archive-inventory_ollama-models
-MODELS="${*:-qwen2.5:3b-instruct-q4_K_M qwen2.5:7b-instruct-q4_K_M}"
+MODELS="${*:-qwen3:4b-instruct-2507-q4_K_M phi4-mini:3.8b-q4_K_M}"
 
 docker volume create "$VOLUME" >/dev/null
 docker run --rm -v "$VOLUME:/root/.ollama" --entrypoint sh "$OLLAMA_IMAGE" -c "

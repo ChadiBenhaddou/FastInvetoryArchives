@@ -11,7 +11,8 @@
 set -euo pipefail
 export MSYS_NO_PATHCONV=1 COMPOSE_PROJECT_NAME=archive-inventory
 
-ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+# Windows form (D:/...) under Git Bash: understood by docker build and docker run -v alike.
+ROOT="$(cd "$(dirname "$0")/.." && { pwd -W 2>/dev/null || pwd; })"
 VERSION="$(tr -d '[:space:]' < "$ROOT/VERSION")"
 OUT="$ROOT/bundle/out/ArchiveInventory-$VERSION"
 WITH_INSTALLERS=0 SKIP_TESTS=0 SKIP_APK=0 UBUNTU=""
@@ -32,12 +33,12 @@ IMAGES=(
   "getmeili/meilisearch:v1.54.3"
   "ollama/ollama:0.40.8"
 )
-LLM_MODELS="qwen2.5:3b-instruct-q4_K_M qwen2.5:7b-instruct-q4_K_M"
+LLM_MODELS="qwen3:4b-instruct-2507-q4_K_M phi4-mini:3.8b-q4_K_M"
 step() { echo; echo "=== $*"; }
 
 step "Bundle $VERSION → $OUT"
 rm -rf "$OUT"
-mkdir -p "$OUT"/{images,models,android,app/scripts,app/samples,app/docker/mysql,prerequis}
+mkdir -p "$OUT"/{images,models,android,app/scripts,app/samples,prerequis}
 
 if [ "$SKIP_TESTS" = 0 ]; then
   step "Tests: backend"
@@ -59,8 +60,24 @@ done
 
 step "LLM models: $LLM_MODELS"
 sh "$ROOT/scripts/pull-llm-models.sh" $LLM_MODELS
-docker run --rm -v archive-inventory_ollama-models:/data:ro -v "$OUT/models:/out" \
-  --entrypoint tar "archive-inventory/app:$VERSION" -cf /out/ollama-models.tar -C /data .
+# Only the listed models (the volume may hold others tried during development): for each,
+# its manifests (both layouts Ollama keeps), the blobs they reference and the blob metadata.
+docker run --rm -v archive-inventory_ollama-models:/data:ro -v "$OUT/models:/out" -w /data \
+  --entrypoint sh "archive-inventory/app:$VERSION" -c '
+    set -e; files=""
+    for m in "$@"; do
+      name=${m%%:*} tag=${m#*:} found=""
+      for manifest in "models/manifests/registry.ollama.ai/library/$name/$tag" "models/manifests-v2/ollama.com/library/$name/$tag"; do
+        [ -f "$manifest" ] || continue
+        found=1 files="$files $manifest"
+        for d in $(grep -o "sha256:[0-9a-f]*" "$manifest" | sort -u); do
+          files="$files models/blobs/sha256-${d#sha256:}"
+          [ -f "models/metadata/sha256-${d#sha256:}.json" ] && files="$files models/metadata/sha256-${d#sha256:}.json"
+        done
+      done
+      [ -n "$found" ] || { echo "missing model $m" >&2; exit 1; }
+    done
+    tar -cf /out/ollama-models.tar $(echo $files | tr " " "\n" | sort -u)' sh $LLM_MODELS
 
 step "Android APK"
 if [ "$SKIP_APK" = 0 ]; then sh "$ROOT/scripts/build-apk.sh"; fi
@@ -68,10 +85,7 @@ cp "$ROOT"/mobile/release/archive-capture-*.apk* "$OUT/android/"
 cp "$ROOT/mobile/INSTALL-TELEPHONE.md" "$OUT/android/"
 
 step "Sample exports"
-docker image inspect archive-inventory/ocr-worker:test >/dev/null 2>&1 \
-  || docker build -q --target test -t archive-inventory/ocr-worker:test "$ROOT/ocr-worker" >/dev/null
-docker run --rm -v "$OUT/app/samples:/out" archive-inventory/ocr-worker:test sh -c \
-  'python -m tests.make_sample_export /out Y --selftest && python -m tests.make_sample_export /out K'
+cp "$ROOT"/samples/* "$OUT/app/samples/"
 
 step "Application files"
 # Production compose: the same file without the "build:" sections (no source code on the PC).
@@ -95,7 +109,6 @@ for line in lines:
 open(sys.argv[2], "w", encoding="utf-8", newline="\n").write("\n".join(out) + "\n")
 PY
 cp "$ROOT/docker-compose.gpu.yml" "$OUT/app/"
-cp "$ROOT/docker/mysql/archive.cnf" "$OUT/app/docker/mysql/"
 sed "s/^APP_VERSION=.*/APP_VERSION=$VERSION/" "$ROOT/.env.example" > "$OUT/app/.env.example"
 cp "$ROOT/scripts/init-env.ps1" "$ROOT/scripts/init-env.sh" "$OUT/app/scripts/"
 cp "$ROOT"/bundle/target/scripts/* "$OUT/app/scripts/"

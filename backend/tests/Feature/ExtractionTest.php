@@ -132,4 +132,15 @@ class ExtractionTest extends TestCase
         $this->assertFalse($m->containsYear('201'));
         $this->assertFalse($m->containsPhrase('محمد بنعلي'));
     }
+
+    public function test_rambling_summary_is_cut_after_the_first_sentence(): void
+    {
+        $short = 'Arrêté nommant M. Karim Benali. Second sentence.';
+        $this->assertSame($short, LlmExtractor::firstSentence($short));
+
+        $long = "Le ministère nomme M. Mohamed Alawi chef de service à Rabat. 2019-03-12, 145, Mohamed Alawi, "
+            .str_repeat('direction des archives, Rabat, ', 6);
+        $this->assertSame('Le ministère nomme M. Mohamed Alawi chef de service à Rabat.', LlmExtractor::firstSentence($long));
+        $this->assertNull(LlmExtractor::firstSentence(null));
+    }
 }

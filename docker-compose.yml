@@ -33,7 +33,7 @@ x-app-env: &app-env
   OCR_URL: http://ocr-worker:8000
   PIPELINE_WORKERS: ${PIPELINE_WORKERS:-2}
   OLLAMA_URL: http://ollama:11434
-  LLM_MODEL: ${LLM_MODEL:-qwen2.5:3b-instruct-q4_K_M}
+  LLM_MODEL: ${LLM_MODEL:-qwen3:4b-instruct-2507-q4_K_M}
   EXTRACT_WORKERS: 1
   MEILISEARCH_HOST: http://meilisearch:7700
   MEILISEARCH_KEY: ${MEILI_MASTER_KEY:?MEILI_MASTER_KEY manquant dans .env}
@@ -54,9 +54,15 @@ services:
   mysql:
     image: mysql:8.4.9
     restart: unless-stopped
+    # Settings as flags, not a mounted .cnf: on Windows a bind-mounted file looks
+    # world-writable and MySQL silently ignores it.
     command:
-      - --character-set-server=utf8mb4
+      - --character-set-server=utf8mb4        # Arabic + French: full Unicode everywhere
       - --collation-server=utf8mb4_unicode_ci
+      - --innodb-buffer-pool-size=1G          # 16 GB PC shared with OCR + LLM; raise on 32 GB
+      - --innodb-redo-log-capacity=512M
+      - --max-connections=100
+      - --skip-name-resolve
     environment:
       MYSQL_DATABASE: ${DB_DATABASE:-archive}
       MYSQL_USER: ${DB_USERNAME:-archive}
@@ -64,7 +70,6 @@ services:
       MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:?DB_ROOT_PASSWORD manquant dans .env}
     volumes:
       - mysql-data:/var/lib/mysql
-      - ./docker/mysql/archive.cnf:/etc/mysql/conf.d/archive.cnf:ro
     healthcheck:
       test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p$$MYSQL_ROOT_PASSWORD --silent"]
       interval: 5s

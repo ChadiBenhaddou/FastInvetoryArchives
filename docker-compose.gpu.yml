@@ -1,9 +1,8 @@
-# Optional: use an NVIDIA GPU for the LLM (and a bigger model).
+# Optional: use an NVIDIA GPU for the LLM.
 # Requires the NVIDIA driver on the PC (Windows: Docker Desktop + WSL2 GPU support;
 # Ubuntu: nvidia-container-toolkit). Start the stack with:
 #   docker compose -f docker-compose.yml -f docker-compose.gpu.yml up -d
-# and set in .env:  LLM_MODEL=qwen2.5:7b-instruct-q4_K_M
-# With a GPU the 7B model extracts a document in a few seconds instead of ~1 minute on CPU.
+# With a GPU the default model extracts a document in a few seconds instead of ~1 minute on CPU.
 services:
   ollama:
     deploy:

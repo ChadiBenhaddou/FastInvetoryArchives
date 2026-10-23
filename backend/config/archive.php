@@ -46,7 +46,7 @@ return [
     // Local LLM (Ollama, internal network only) used to extract metadata from OCR text.
     'llm' => [
         'url' => env('OLLAMA_URL', 'http://ollama:11434'),
-        'model' => env('LLM_MODEL', 'qwen2.5:3b-instruct-q4_K_M'),
+        'model' => env('LLM_MODEL', 'qwen3:4b-instruct-2507-q4_K_M'),
         'timeout' => (int) env('LLM_TIMEOUT', 900),
         'context' => (int) env('LLM_CONTEXT', 4096),
         // Cover pages are short; longer OCR text is cut to keep CPU time per document bounded.

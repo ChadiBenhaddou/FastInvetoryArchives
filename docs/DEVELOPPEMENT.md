@@ -8,7 +8,7 @@ sur une machine **connectée** à Internet. Le guide d'utilisation est le [READM
 | Dossier | Contenu |
 |---|---|
 | `backend/` | Laravel 13 (PHP 8.3) + interface d'administration React/Vite/Tailwind (`resources/js`) |
-| `docker/` | Image applicative (nginx + php-fpm, file d'attente, planificateur, passerelle), config MySQL |
+| `docker/` | Image applicative (nginx + php-fpm, file d'attente, planificateur, passerelle) |
 | `ocr-worker/` | Service OCR Python : PaddleOCR PP-OCRv5 (arabe + latin) et Tesseract 5 (`ara+fra`) |
 | `mobile/` | Application Android (React + Capacitor) : capture, contrôle qualité, export ZIP |
 | `shared/` | Code de boîte ([BOX_CODE.md](../shared/BOX_CODE.md)), vecteurs de test communs, schéma du manifeste |
