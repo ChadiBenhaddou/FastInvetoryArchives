@@ -106,6 +106,15 @@ def test_sideways_photo_is_turned_upright(engine, rotate, expected):
     assert cer(synth.expected_text("fr"), result.text) <= 0.05
 
 
+def test_wrong_orientation_verdict_on_an_upright_page_is_overruled(engine, monkeypatch):
+    """Real box A-0002-D: upright Arabic pages classified 180°, read upside down as gibberish."""
+    monkeypatch.setattr(engine, "_page_rotation", lambda _img: 180)
+    result = run(engine, synth.render(synth.PAGES["ar"]))
+    print(f"\n[wrong 180°] kept {result.rotation} CER={cer(synth.expected_text('ar'), result.text):.3f}")
+    assert result.rotation == 0
+    assert cer(synth.expected_text("ar"), result.text) <= 0.05
+
+
 def test_blank_page_gives_empty_text(engine):
     blank = synth.render([])
     result = run(engine, blank)

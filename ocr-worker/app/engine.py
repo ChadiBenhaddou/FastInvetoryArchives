@@ -121,6 +121,19 @@ class OcrEngine:
 
     def _paddle(self, img: np.ndarray) -> OcrResult:
         rotation = self._page_rotation(img)
+        result = self._paddle_read(img, rotation)
+        if rotation:
+            # The orientation model often says 180° for upright phone photos of Arabic pages
+            # (a whole box came out as gibberish): the page is also read as photographed and
+            # the more confident reading wins. Costs a second pass only on "rotated" pages.
+            upright = self._paddle_read(img, 0)
+            if upright.confidence >= result.confidence:
+                log.info("orientation model said %d°, kept the photo as taken (%.2f vs %.2f)",
+                         rotation, upright.confidence, result.confidence)
+                result = upright
+        return result
+
+    def _paddle_read(self, img: np.ndarray, rotation: int) -> OcrResult:
         img = preprocess.normalize(preprocess.rotate_quarter(img, rotation))
 
         polys = self._detect(img)

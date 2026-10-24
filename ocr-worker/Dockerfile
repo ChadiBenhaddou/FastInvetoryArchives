@@ -32,7 +32,10 @@ EXPOSE 8000
 HEALTHCHECK --interval=15s --timeout=5s --start-period=120s --retries=10 \
     CMD curl -fsS http://127.0.0.1:8000/health | grep -q '"ok"' || exit 1
 # One process per OCR_PROCESSES; each loads the models once (~1 GB RAM per process).
-CMD ["sh", "-c", "exec uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers ${OCR_PROCESSES:-2} --timeout-keep-alive 30"]
+# Paddle holds the GIL while it loads models or reads a photo, so a busy process cannot answer
+# the supervisor's ping: with the default 5 s it was killed mid-photo, and again while reloading
+# its models (crash loop while the LLM loaded the CPU). Above the app's OCR timeout (300 s).
+CMD ["sh", "-c", "exec uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers ${OCR_PROCESSES:-2} --timeout-keep-alive 30 --timeout-worker-healthcheck 600"]
 
 ########## Tests (fonts to render synthetic Arabic/French pages) ##########
 FROM base AS test
