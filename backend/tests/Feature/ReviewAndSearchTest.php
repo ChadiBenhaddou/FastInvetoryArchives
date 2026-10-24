@@ -194,6 +194,40 @@ class ReviewAndSearchTest extends TestCase
         $this->assertTrue(AuditLog::where('action', 'search')->exists());
     }
 
+    public function test_arabic_query_is_normalized_and_matches_shown_from_the_normalized_copy(): void
+    {
+        Http::fake(['search.test/*' => Http::response([
+            'hits' => [[
+                'id' => 1, 'box_id' => 1, 'box_code' => 'A-0001-C', 'image_id' => 2, 'sequence' => 1, 'room' => null,
+                'shelf' => null, 'row' => null, 'agent_name' => null, 'doc_type' => null, 'doc_date' => null,
+                'needs_review' => false, 'title' => null, 'reference_number' => null, 'summary' => null, 'language' => 'ar',
+                // Matched only in the normalized copy: the original has no highlight.
+                '_formatted' => ['ocr_text' => 'قرار الإمارة…', 'ocr_text_search' => "قرار \u{E000}الاماره\u{E001}…"],
+            ]],
+            'totalHits' => 1,
+        ])]);
+
+        $this->actingAs($this->reviewer)->getJson('/api/search?q='.urlencode('الإمَارَة ٢٠١٩'))
+            ->assertOk()
+            ->assertJsonPath('hits.0.snippet', "قرار \u{E000}الاماره\u{E001}…");
+
+        // أ/إ → ا, harakat removed, ة → ه, ٢٠١٩ → 2019
+        Http::assertSent(fn ($r) => $r->data()['q'] === 'الاماره 2019'
+            && in_array('ocr_text_search', $r->data()['attributesToCrop'], true));
+    }
+
+    public function test_indexed_document_carries_normalized_copies(): void
+    {
+        $doc = $this->box()->documents()->first();
+        $doc->update(['ocr_text' => 'وزارة الداخلية — قرار رقم ١٤٥', 'title' => 'مُذكّرة']);
+
+        $sent = app(\App\Services\Search\SearchIndex::class)->toSearchDocument($doc->fresh());
+
+        $this->assertSame('وزارة الداخلية — قرار رقم ١٤٥', $sent['ocr_text']); // the original is kept
+        $this->assertSame('وزاره الداخليه — قرار رقم 145', $sent['ocr_text_search']);
+        $this->assertSame('مذكره', $sent['title_search']);
+    }
+
     public function test_search_filter_values_are_escaped(): void
     {
         Http::fake(['search.test/*' => Http::response(['hits' => [], 'totalHits' => 0])]);

@@ -9,8 +9,14 @@ import AgentChart from '../components/AgentChart';
 const SERVICE_LABELS = {
     database: 'Base de données (MySQL)',
     search: 'Moteur de recherche (Meilisearch)',
-    ocr: 'OCR (PaddleOCR + Tesseract)',
+    ocr: 'OCR',
     llm: 'IA locale (Ollama)',
+};
+
+// Engine reading the photos right now (OCR_ENGINE, with PaddleOCR as fallback).
+const OCR_ENGINES = {
+    'windows-oneocr': 'Windows (Outil Capture d\'écran)',
+    paddle: 'PaddleOCR + Tesseract',
 };
 
 function formatDuration(seconds) {
@@ -139,6 +145,7 @@ export default function DashboardPage() {
                                 <li key={key} className="flex items-center gap-2 text-sm" title={s.error}>
                                     {s.ok ? <CheckCircle2 className="size-4 text-green-600" /> : <XCircle className="size-4 text-red-600" />}
                                     {SERVICE_LABELS[key] ?? key}
+                                    {key === 'ocr' && status.ocr_engine && ` : ${OCR_ENGINES[status.ocr_engine] ?? status.ocr_engine}`}
                                 </li>
                             ))}
                         </ul>

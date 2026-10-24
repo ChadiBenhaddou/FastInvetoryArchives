@@ -115,6 +115,12 @@ cp "$ROOT"/bundle/target/scripts/* "$OUT/app/scripts/"
 cp "$ROOT"/bundle/target/install.* "$ROOT"/bundle/target/update.* "$OUT/"
 cp "$ROOT/README.md" "$OUT/LISEZMOI.md"
 echo "$VERSION" > "$OUT/VERSION"
+
+step "Windows OCR service (scripts + wheels; Microsoft's engine files are NEVER shipped)"
+mkdir -p "$OUT/app/windows-ocr/wheels"
+cp "$ROOT"/windows-ocr/{ocr_service.py,ocr_result.py,compare.py,setup.ps1,requirements.txt} "$OUT/app/windows-ocr/"
+docker run --rm -v "$ROOT/windows-ocr/requirements.txt:/req.txt:ro" -v "$OUT/app/windows-ocr/wheels:/w" python:3.11-slim \
+  pip download --quiet --only-binary=:all: --platform win_amd64 --python-version 3.12 -d /w -r /req.txt
 for f in $(find "$OUT" -name '*.sh'); do sed -i 's/\r$//' "$f"; done
 # Windows PowerShell 5.1 reads .ps1 files without a BOM as ANSI: add one (accents, Arabic).
 for f in $(find "$OUT" -name '*.ps1'); do
@@ -128,6 +134,9 @@ if [ "$WITH_INSTALLERS" = 1 ]; then
   wsl_url=$(curl -fsSL https://api.github.com/repos/microsoft/WSL/releases/latest \
     | grep -oE 'https://[^"]+x64\.msi' | head -1)
   curl -fL --retry 5 -o "$OUT/prerequis/$(basename "$wsl_url")" "$wsl_url"
+  # For the Windows OCR service (windows-ocr/). 3.12.10 is the last 3.12 release with an installer.
+  curl -fL --retry 5 -o "$OUT/prerequis/python-3.12.10-amd64.exe" \
+    "https://www.python.org/ftp/python/3.12.10/python-3.12.10-amd64.exe"
 fi
 if [ -n "$UBUNTU" ]; then
   step "Ubuntu prerequisites: Docker Engine for $UBUNTU"
@@ -158,6 +167,9 @@ Windows 10/11 sans Internet (détail : LISEZMOI.md, section 4) :
      Settings > General : cocher « Start Docker Desktop when you sign in », décocher « Send usage statistics ».
      Settings > Software updates : décocher « Automatically check for updates ».
   6. Lancer install.ps1 (clic droit > Exécuter avec PowerShell).
+  7. OCR Windows (meilleure lecture de l'arabe) : installer python-3.12.10-amd64.exe (cocher « Add
+     python.exe to PATH »), puis lancer C:\ArchiveInventory\app\windows-ocr\setup.ps1.
+     Voir LISEZMOI.md, section 4.4.
 Ubuntu : paquets Docker dans ubuntu/ (si fournis), voir LISEZMOI.md, section 5.
 TXT
 

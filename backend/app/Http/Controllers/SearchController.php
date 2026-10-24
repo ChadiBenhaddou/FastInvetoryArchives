@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\AuditLog;
 use App\Services\Search\SearchIndex;
+use App\Support\ArabicText;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -44,14 +45,15 @@ class SearchController extends Controller
             isset($data['needs_review']) ? 'needs_review = '.($data['needs_review'] ? 'true' : 'false') : null,
         ]));
 
-        $result = $index->search($data['q'] ?? '', [
+        // Same normalization as the indexed *_search copies (أ/إ/آ → ا, ة → ه, diacritics…).
+        $result = $index->search(ArabicText::forSearch($data['q'] ?? ''), [
             'filter' => $filters,
             'page' => (int) ($data['page'] ?? 1),
             'hitsPerPage' => 20,
             'facets' => ['doc_type', 'year', 'room', 'agent_name', 'device'],
             // ocr_text must be listed here too: cropping alone does not highlight.
-            'attributesToHighlight' => ['title', 'summary', 'reference_number', 'persons', 'organizations', 'keywords', 'ocr_text'],
-            'attributesToCrop' => ['ocr_text'],
+            'attributesToHighlight' => ['title', 'summary', 'reference_number', 'persons', 'organizations', 'keywords', 'ocr_text', 'ocr_text_search'],
+            'attributesToCrop' => ['ocr_text', 'ocr_text_search'],
             'cropLength' => 35,
             'highlightPreTag' => self::MARK_START,
             'highlightPostTag' => self::MARK_END,
@@ -85,9 +87,24 @@ class SearchController extends Controller
                 'title' => $hit['_formatted']['title'] ?? $hit['title'],
                 'reference_number' => $hit['_formatted']['reference_number'] ?? $hit['reference_number'],
                 'summary' => $hit['_formatted']['summary'] ?? $hit['summary'],
-                'snippet' => $hit['_formatted']['ocr_text'] ?? null,
+                'snippet' => $this->snippet($hit['_formatted'] ?? []),
                 'language' => $hit['language'],
             ], $result['hits']),
         ]);
+    }
+
+    /**
+     * The OCR text as stored, around the match. When the word only matched in the normalized
+     * copy (searched without hamza, text written with it…), that copy is shown instead.
+     */
+    private function snippet(array $formatted): ?string
+    {
+        $original = $formatted['ocr_text'] ?? null;
+        $normalized = $formatted['ocr_text_search'] ?? null;
+        if ($original !== null && str_contains($original, self::MARK_START)) {
+            return $original;
+        }
+
+        return $normalized !== null && str_contains($normalized, self::MARK_START) ? $normalized : $original;
     }
 }

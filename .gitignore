@@ -9,3 +9,9 @@ node_modules/
 __pycache__/
 .pytest_cache/
 *.pyc
+# Windows OCR: Microsoft's engine files (copied from the PC's Snipping Tool, never committed
+# nor shipped), and what setup.ps1 builds on the PC.
+windows-ocr/ocr_data/
+windows-ocr/venv/
+windows-ocr/wheels/
+windows-ocr/logs/

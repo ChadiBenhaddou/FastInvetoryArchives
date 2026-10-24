@@ -7,7 +7,7 @@ use App\Enums\OcrStatus;
 use App\Models\Document;
 use App\Models\Image;
 use App\Models\ProcessingLog;
-use App\Services\Ocr\OcrClient;
+use App\Services\Ocr\OcrService;
 use App\Services\Pipeline;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
@@ -15,7 +15,7 @@ use Illuminate\Support\Facades\Storage;
 use Throwable;
 
 /**
- * OCR of one document photo by the local OCR worker. Safe to re-run: the document row
+ * OCR of one document photo by the configured engine (OcrService). Safe to re-run: the document row
  * is updated in place, and an image already done is skipped unless $force.
  */
 class RunOcrJob implements ShouldQueue
@@ -23,7 +23,8 @@ class RunOcrJob implements ShouldQueue
     use Queueable;
 
     public int $tries = 3;
-    public int $timeout = 330;
+    // Above the Windows engine timeout (120 s) + the PaddleOCR fallback timeout (300 s).
+    public int $timeout = 450;
 
     public function __construct(public int $imageId, public bool $force = false)
     {
@@ -36,7 +37,7 @@ class RunOcrJob implements ShouldQueue
         return [30, 120];
     }
 
-    public function handle(OcrClient $ocr, Pipeline $pipeline): void
+    public function handle(OcrService $ocr, Pipeline $pipeline): void
     {
         $image = Image::find($this->imageId);
         if (! $image || $image->type === ImageType::CodePhoto) {

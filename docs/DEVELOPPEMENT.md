@@ -10,6 +10,7 @@ sur une machine **connectée** à Internet. Le guide d'utilisation est le [READM
 | `backend/` | Laravel 13 (PHP 8.3) + interface d'administration React/Vite/Tailwind (`resources/js`) |
 | `docker/` | Image applicative (nginx + php-fpm, file d'attente, planificateur, passerelle) |
 | `ocr-worker/` | Service OCR Python : PaddleOCR PP-OCRv5 (arabe + latin) et Tesseract 5 (`ara+fra`) |
+| `windows-ocr/` | OCR Windows (moteur de l'Outil Capture d'écran via `oneocr`), service natif sur 127.0.0.1:8010, joint par la passerelle ; `OCR_ENGINE=windows` (défaut) avec PaddleOCR en secours. Tests : `py -3.12 -m unittest discover -s tests -t .` dans ce dossier |
 | `mobile/` | Application Android (React + Capacitor) : capture, contrôle qualité, export ZIP |
 | `shared/` | Code de boîte ([BOX_CODE.md](../shared/BOX_CODE.md)), vecteurs de test communs, schéma du manifeste |
 | `scripts/` | `.env`, APK, modèles d'IA, tests de bout en bout |
@@ -37,8 +38,15 @@ sur une machine **connectée** à Internet. Le guide d'utilisation est le [READM
   Docker *internal* : même si le PC était branché à Internet par erreur, ils ne pourraient rien envoyer.
 - Une seule image applicative ; le rôle est choisi par `CONTAINER_ROLE` (`app`, `queue`, `scheduler`,
   `gateway`) et `QUEUES`.
-- Pipeline d'une boîte : `ImportExportJob` → `RunOcrJob` par photo → `IndexDocumentJob` (cherchable tout de suite)
-  + `ExtractMetadataJob` (IA) → réindexation → la boîte passe **à réviser** quand toutes les étapes sont finies.
+- **OCR Windows** : `windows-ocr/ocr_service.py` tourne hors Docker (DLL Windows), sur 127.0.0.1:8010. Les
+  workers `pipeline` l'appellent via `gateway:8010` (serveur nginx non publié, `POST /ocr` et `GET /health`
+  seulement) → `host.docker.internal:8010`. Aucun conteneur de données n'a de route vers le PC. Côté Laravel :
+  `OcrService` (`FallbackOcrService` = `WindowsOneOcrEngine` puis `PaddleOcrEngine`) ; service arrêté (connexion
+  refusée, 502) → PaddleOCR pendant 1 min ; photo refusée (422) → PaddleOCR pour cette photo seulement.
+- Pipeline d'une boîte : `ImportExportJob` → `RunOcrJob` par photo (OCR + champs par `RuleExtractor`, quelques ms)
+  → `IndexDocumentJob` → la boîte passe **à réviser** quand toutes ses photos sont indexées (~0,8 s par photo,
+  3 workers `pipeline`, file `index` prioritaire sur `ocr`). Avec `LLM_ENABLED=true` : `RunOcrJob` →
+  `IndexDocumentJob` (cherchable tout de suite) + `ExtractMetadataJob` (IA, minutes) → réindexation → à réviser.
 
 ## Démarrage (machine de développement)
 

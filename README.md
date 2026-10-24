@@ -35,8 +35,8 @@ Sommaire
   1. « Nouvelle boîte » : le téléphone donne un code   5. Import du ZIP (glisser-déposer
      (ex. A-0123-N), l'agent l'écrit sur la boîte         ou dossier surveillé)
   2. Photo du code écrit                               6. Lecture automatique (OCR arabe + français)
-  3. Photo de la couverture de chaque dossier          7. Extraction par l'IA locale : type, date,
-     (contrôle de netteté et de lumière immédiat)         référence, titre, personnes, organismes
+  3. Photo de la couverture de chaque dossier          7. Extraction des champs (règles, ou IA locale
+     (contrôle de netteté et de lumière immédiat)         en option) : type, date, référence, titre…
   4. « Exporter » : UN fichier ZIP par session ──câble USB──▶ 8. Révision par une personne
                                                        9. Recherche, inventaire Excel, sauvegarde
 ```
@@ -47,8 +47,8 @@ Sommaire
   une mauvaise lettre d'appareil). Les lettres O, I, S, B et Z ne sont jamais utilisées (trop proches de 0, 1, 5, 8, 2).
 - Le PC compare le code **photographié** sur la boîte au code **enregistré** : la personne qui révise voit
   les deux côte à côte.
-- Un document est **cherchable dès qu'il a été lu** (quelques secondes) ; l'extraction par l'IA, plus lente,
-  complète ses champs ensuite.
+- Un document est **cherchable et prêt à réviser moins d'une seconde après sa lecture** : ses champs (type, date,
+  référence, titre…) sont trouvés par des règles. L'IA, plus lente, peut être activée en option ([§ 13](#13-réglages-avancés)).
 
 ## 2. Matériel nécessaire
 
@@ -67,12 +67,15 @@ Le PC est prévu pour ne faire que ce travail. Ordres de grandeur mesurés sur u
 | Étape | Vitesse | Par jour (24 h) |
 |---|---|---|
 | Import (vérification + copie) | quelques secondes par boîte | — |
-| Lecture OCR | ~6 s par photo et par processus (2 en parallèle) | ~25 000 photos |
-| Extraction par l'IA (processeur seul) | ~40 à 70 s par document selon le modèle ([§ 13](#13-réglages-avancés)) | ~1 300 à 2 150 documents |
+| Lecture (OCR Windows, [§ 4.4](#44-ocr-windows-fortement-conseillé)) + champs par règles + indexation | **~0,8 s par photo**, de l'import à « À réviser » (3 photos en parallèle, PC sans autre travail) | ~100 000 photos |
+| Même chose avec PaddleOCR (OCR Windows absent, ou Ubuntu) | ~6 à 15 s par photo (2 en parallèle) | ~10 000 photos |
+| Extraction par l'IA, si elle est activée (`LLM_ENABLED=true`, [§ 13](#13-réglages-avancés)) | ~1 à 2,5 min par document | ~700 à 1 300 documents |
 
-La recherche et la révision n'attendent pas l'IA : si les téléphones produisent plus de photos par jour que
-l'IA ne peut en traiter, les documents restent cherchables par leur texte et l'IA rattrape son retard la nuit
-et le week-end.
+Par défaut l'IA est **désactivée** : le type de document, la date, la référence, le titre, les organismes et
+les personnes sont trouvés par des règles (français et arabe) en quelques millisecondes, et chaque boîte passe
+« À réviser » dès que ses photos sont lues. Les valeurs sont toujours prises dans le texte lui-même ; ce qui
+n'est pas trouvé reste vide pour la personne qui révise. La vitesse dépend du PC : des programmes ouverts
+(navigateurs, éditeurs…) la divisent facilement par deux.
 
 ## 3. Contenu de la clé USB
 
@@ -83,9 +86,9 @@ dépassent 4 Go : FAT32 ne convient pas).
 |---|---|
 | `install.ps1` / `install.sh` | installation **et** mise à jour (Windows / Ubuntu) |
 | `LISEZMOI.md` | ce guide |
-| `prerequis\` | installeurs de WSL et de Docker Desktop pour Windows (si fournis) |
+| `prerequis\` | installeurs de WSL, de Docker Desktop et de Python 3.12 pour Windows (si fournis) |
 | `android\` | l'application des téléphones (`archive-capture-<version>.apk`) et son guide d'installation |
-| `images\`, `models\`, `app\` | logiciels, modèles d'IA et scripts (ne pas modifier) |
+| `images\`, `models\`, `app\` | logiciels, modèles d'IA et scripts (ne pas modifier) ; `app\windows-ocr\` : l'OCR Windows ([§ 4.4](#44-ocr-windows-fortement-conseillé)) |
 | `SHA256SUMS` | empreintes : l'installeur vérifie que rien n'a été abîmé pendant la copie |
 
 ## 4. Installer le PC (Windows)
@@ -158,6 +161,46 @@ Raccourcis créés sur le bureau :
 | `backups\` | sauvegardes de la base (une par nuit, les 7 dernières sont gardées) |
 | `app\` | l'application (ne pas modifier, sauf `app\.env` sur instruction) |
 
+### 4.4 OCR Windows (fortement conseillé)
+
+L'application sait utiliser le moteur de lecture de l'**Outil Capture d'écran** de Windows 11 (« Actions de
+texte »). Sur des photos de documents en arabe il lit **bien mieux** que le moteur intégré (PaddleOCR), et
+**15 fois plus vite** (~1 s par photo au lieu de ~15 s). Il tourne sur le PC lui-même, hors ligne. Tant qu'il
+n'est pas installé — ou s'il s'arrête — l'application continue toute seule avec PaddleOCR.
+
+> **Licence — à lire avant d'installer : [§ 14](#14-licences).** Ce moteur n'est pas un composant libre.
+
+**Ce qu'il faut** (aucun téléchargement sur le PC) :
+
+| Élément | D'où il vient |
+|---|---|
+| `oneocr.dll`, `oneocr.onemodel`, `onnxruntime.dll` | de l'**Outil Capture d'écran du PC** (copiés par le script ; jamais fournis sur la clé). Il faut une version récente, avec les « Actions de texte » : la mettre à jour depuis le Microsoft Store **avant** de couper le réseau du PC. |
+| Python 3.12 64 bits | `prerequis\python-3.12.10-amd64.exe` |
+| `oneocr-1.0.12-py3-none-any.whl`, `pillow-13.0.0-cp312-cp312-win_amd64.whl` | `app\windows-ocr\wheels\` (rien d'autre : le service n'utilise que Python) |
+| Scripts | `app\windows-ocr\` : `setup.ps1`, `ocr_service.py`, `ocr_result.py`, `compare.py`, `requirements.txt` |
+
+**Installation** (après le § 4.2, avec le compte qui utilise le PC) :
+
+1. Installer `prerequis\python-3.12.10-amd64.exe` en cochant **Add python.exe to PATH**.
+2. Ouvrir PowerShell et lancer
+   `powershell -ExecutionPolicy Bypass -File C:\ArchiveInventory\app\windows-ocr\setup.ps1`.
+   Le script copie les 3 fichiers dans `windows-ocr\ocr_data\`, installe les paquets depuis `wheels\`, vérifie que
+   le moteur lit un texte de test, crée la tâche planifiée **ArchiveInventory-OCR** (démarrage à l'ouverture de
+   session, sur 127.0.0.1 seulement) et vérifie que l'application l'atteint. Si l'accès aux fichiers de l'Outil
+   Capture d'écran est refusé : relancer PowerShell **en administrateur**.
+3. Relire avec ce moteur les photos déjà traitées (dans `C:\ArchiveInventory\app`) :
+   `docker compose exec app php artisan archive:reprocess --upgrade --wait`
+   (seules les photos pas encore lues par l'OCR Windows sont reprises, avec une barre de progression).
+
+**Comparer avant de décider** — ancien et nouveau moteur côte à côte sur un dossier de photos, plus un rapport
+HTML (l'arabe s'y affiche de droite à gauche) :
+`C:\ArchiveInventory\app\windows-ocr\venv\Scripts\python.exe -X utf8 C:\ArchiveInventory\app\windows-ocr\compare.py C:\ArchiveInventory\storage\A-0123-N --html comparaison.html`
+
+**Au quotidien** : rien à faire. Le moteur utilisé est inscrit pour chaque page (`windows-oneocr` ou `paddle`) ;
+les pages lues avec une confiance faible restent signalées « à réviser ». Journal du service :
+`app\windows-ocr\logs\ocr-service.log`. Pour revenir à PaddleOCR : `OCR_ENGINE=paddle` dans `app\.env`, puis
+**Inventaire - Arrêter** / **Démarrer** ; pour retirer le service : `setup.ps1 -Uninstall`.
+
 ## 5. Installer le PC (Ubuntu)
 
 1. Installer Docker Engine **hors ligne**. La clé contient, pour **Ubuntu 24.04**, les paquets Docker
@@ -178,7 +221,7 @@ Raccourcis créés sur le bureau :
 ## 6. Vérifier l'installation, réseau coupé
 
 La vérification prouve que tout fonctionne **sans réseau** : elle importe un export d'exemple (une page en
-français, une page en arabe), attend la lecture OCR et l'extraction par l'IA, cherche « Benali » et « الداخلية »,
+français, une page en arabe), attend la lecture OCR et l'extraction des champs (et affiche le temps par photo), cherche « Benali » et « الداخلية »,
 puis **supprime toutes les données de test**. Elle contrôle aussi qu'aucun service ne peut joindre Internet.
 
 1. **Débrancher le câble réseau et couper le Wi-Fi** du PC (ou lancer le script avec `-DisableNetwork` depuis un
@@ -370,6 +413,12 @@ Les réglages sont dans `C:\ArchiveInventory\app\.env` (à modifier avec le Bloc
 
 ### Modèle d'IA
 
+**L'IA est désactivée par défaut** (`LLM_ENABLED=false` dans `.env`) : sur processeur seul elle prend 1 à
+2,5 minutes par document, contre moins d'une seconde pour tout le reste. Les champs sont alors trouvés par des
+règles. L'activer (`LLM_ENABLED=true`, puis **Inventaire - Arrêter** / **Démarrer**) donne de meilleurs titres,
+des mots-clés et un résumé, mais chaque boîte attend alors l'IA avant de passer « À réviser ». Pour réextraire
+avec le réglage choisi les documents déjà traités : `docker compose exec app php artisan archive:reprocess --all --extraction --wait`.
+
 Deux modèles sont fournis, tous deux sous licence libre autorisant l'usage professionnel :
 
 | `LLM_MODEL` | Licence | Temps par document* | Par jour (24 h)* | Qualité |
@@ -411,6 +460,15 @@ Consulter les conditions en vigueur sur docker.com avant l'installation. **Alter
 sous **Ubuntu** ([§ 5](#5-installer-le-pc-ubuntu)) — Docker Engine y est libre (Apache 2.0) et l'application
 fonctionne à l'identique.
 
+**OCR Windows (§ 4.4) — risque de licence accepté par le responsable du projet.** Le moteur de l'Outil Capture
+d'écran (`oneocr.dll`, `oneocr.onemodel`) appartient à Microsoft. Il n'est ni documenté ni proposé pour être
+utilisé par d'autres programmes ; le paquet `oneocr` (sans licence déclarée) l'utilise en déchiffrant son modèle
+avec une clé extraite de la DLL. Cet usage contrevient très probablement aux conditions de licence de l'Outil
+Capture d'écran. C'est pourquoi les fichiers ne sont jamais copiés sur la clé : chaque PC les prend dans sa propre
+installation de Windows. Faire valider cet usage par le service juridique ou informatique ; à défaut, laisser
+`OCR_ENGINE=paddle` (PaddleOCR, Apache 2.0). L'API OCR officielle de Windows (`Windows.Media.Ocr`) a été essayée :
+elle ne lit presque rien sur les photos de documents arabes.
+
 Tous les autres composants sont libres et utilisables par une administration, sans redevance :
 
 | Composant | Licence |
@@ -419,6 +477,7 @@ Tous les autres composants sont libres et utilisables par une administration, sa
 | Modèle d'IA Phi-4-mini (Microsoft) | MIT |
 | Ollama (exécution des modèles) | MIT |
 | PaddleOCR, PaddlePaddle (lecture du texte) | Apache 2.0 |
+| Python, Pillow (service OCR Windows) | PSF, MIT-CMU |
 | Tesseract OCR | Apache 2.0 |
 | OpenCV | Apache 2.0 |
 | Meilisearch (recherche, édition communautaire) | MIT |

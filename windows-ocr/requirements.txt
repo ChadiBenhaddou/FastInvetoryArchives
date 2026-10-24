@@ -1,0 +1,4 @@
+# Windows OCR service (Python 3.12, Windows x64). Installed OFFLINE from wheels/ by setup.ps1.
+# Nothing else: the HTTP server is Python's standard library.
+oneocr==1.0.12
+Pillow==13.0.0

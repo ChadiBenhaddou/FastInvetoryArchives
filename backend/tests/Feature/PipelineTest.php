@@ -32,6 +32,8 @@ class PipelineTest extends TestCase
         parent::setUp();
         Storage::fake('archive');
         config([
+            'archive.ocr.engine' => 'paddle', // the Windows engine and its fallback: OcrEngineTest
+            'archive.llm.enabled' => true, // the default (rules, no LLM): test_rules_*
             'archive.ocr.url' => 'http://ocr.test',
             'archive.llm.url' => 'http://llm.test',
             'archive.meilisearch.host' => 'http://search.test',
@@ -154,6 +156,46 @@ class PipelineTest extends TestCase
             && str_contains($r->data()[0]['ocr_text'], 'وزارة'));
         // ...but the box waits for the extraction before going to review.
         $this->assertSame(BoxStatus::Processing, $box->fresh()->status);
+    }
+
+    public function test_rules_by_default_no_llm_and_box_ready_once_indexed(): void
+    {
+        config(['archive.llm.enabled' => false]);
+        $this->fakeServices();
+        $box = $this->box(documents: 2);
+
+        BoxImported::dispatch($box->id);
+
+        $this->assertSame(BoxStatus::Review, $box->fresh()->status);
+        $doc = Document::firstOrFail();
+        $this->assertSame('done', $doc->extraction_status);
+        $this->assertSame('rules', $doc->extraction_model);
+        $this->assertSame('arrêté', $doc->doc_type);
+        $this->assertSame('145', $doc->reference_number);
+        $this->assertSame('2019-03-12', $doc->doc_date->format('Y-m-d'));
+        $this->assertSame(['وزارة الداخلية'], $doc->organizations);
+        $this->assertNull($doc->extraction_confidence);
+        $this->assertFalse($doc->needs_review);
+        Http::assertNotSent(fn ($r) => str_contains($r->url(), 'llm.test'));
+        // Indexed once per document, with its fields: no second pass.
+        $this->assertSame(2, ProcessingLog::where(['step' => 'index', 'status' => 'success'])->count());
+        Http::assertSent(fn ($r) => str_contains($r->url(), 'search.test/indexes/documents/documents')
+            && $r->data()[0]['doc_type'] === 'arrêté');
+    }
+
+    public function test_rules_rerun_by_the_extraction_job_when_the_llm_is_off(): void
+    {
+        $this->fakeServices();
+        $box = $this->box(documents: 1);
+        BoxImported::dispatch($box->id); // with the LLM
+        config(['archive.llm.enabled' => false]);
+
+        $this->artisan('archive:reprocess', ['codes' => [$box->code], '--extraction' => true])->assertSuccessful();
+
+        $this->assertSame('rules', Document::firstOrFail()->extraction_model);
+        $this->assertSame(BoxStatus::Review, $box->fresh()->status);
+        // The LLM was only called by the first pass; the rerun re-indexes with the rule fields.
+        $this->assertSame(1, Http::recorded(fn ($r) => str_contains($r->url(), 'llm.test'))->count());
     }
 
     public function test_low_extraction_confidence_needs_review(): void

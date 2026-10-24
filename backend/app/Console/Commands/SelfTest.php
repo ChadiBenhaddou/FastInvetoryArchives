@@ -10,7 +10,8 @@ use App\Models\Device;
 use App\Models\Document;
 use App\Models\Import;
 use App\Services\Import\ImportFolders;
-use App\Services\Ocr\OcrClient;
+use App\Services\Ocr\FallbackOcrService;
+use App\Services\Ocr\OcrService;
 use App\Services\Search\SearchIndex;
 use Illuminate\Console\Attributes\Description;
 use Illuminate\Console\Attributes\Signature;
@@ -23,8 +24,8 @@ use Throwable;
 
 /**
  * End-to-end check of an installed system, used by the verify script (run with the network
- * adapter disabled): services up, then a sample export goes through import → OCR → LLM →
- * search. Every trace of the test (boxes, photos, index entries, device) is removed after.
+ * adapter disabled): services up, then a sample export goes through import → OCR → fields
+ * (rules, or the LLM when enabled) → search. Every trace of the test (boxes, photos, index entries, device) is removed after.
  */
 #[Signature('archive:selftest {zip : Sample export ZIP (built with the bundle)} {--query=* : Words the search must find in the sample} {--timeout=1800 : Seconds to wait for the processing} {--keep : Do not delete the test data}')]
 #[Description('Verify the installation end to end with a sample export, then clean up')]
@@ -32,16 +33,23 @@ class SelfTest extends Command
 {
     private array $failures = [];
 
-    public function handle(OcrClient $ocr, SearchIndex $search, ImportFolders $folders): int
+    public function handle(OcrService $ocr, SearchIndex $search, ImportFolders $folders): int
     {
         $this->line('1) Services');
         $this->check('Base de données', fn () => DB::select('select 1'));
         $this->check('Moteur de recherche', fn () => Http::timeout(5)->get(rtrim(config('archive.meilisearch.host'), '/').'/health')->throw());
-        $this->check('OCR', fn () => $ocr->healthy() ?: throw new \RuntimeException('non prêt'));
-        $this->check('IA locale + modèle '.config('archive.llm.model'), function () {
-            $models = Http::timeout(5)->get(rtrim(config('archive.llm.url'), '/').'/api/tags')->throw()->json('models.*.name') ?? [];
-            in_array(config('archive.llm.model'), $models, true) ?: throw new \RuntimeException('modèle absent');
-        });
+        $this->check('OCR ('.$ocr->name().')', fn () => $ocr->healthy() ?: throw new \RuntimeException('non prêt'));
+        if ($ocr instanceof FallbackOcrService && ! $ocr->preferred()->healthy()) {
+            // Not a failure (PaddleOCR takes over), but the better engine should be running on Windows.
+            $this->warn('   ! OCR Windows (Snipping Tool) indisponible : PaddleOCR est utilisé. Voir windows-ocr\\setup.ps1.');
+        }
+        $llm = config('archive.llm.enabled');
+        if ($llm) {
+            $this->check('IA locale + modèle '.config('archive.llm.model'), function () {
+                $models = Http::timeout(5)->get(rtrim(config('archive.llm.url'), '/').'/api/tags')->throw()->json('models.*.name') ?? [];
+                in_array(config('archive.llm.model'), $models, true) ?: throw new \RuntimeException('modèle absent');
+            });
+        }
         $this->check('Dossier des archives accessible en écriture', fn () => is_writable(config('archive.root')) ?: throw new \RuntimeException(config('archive.root')));
         if ($this->failures) {
             return $this->finish();
@@ -82,19 +90,24 @@ class SelfTest extends Command
             $this->check("Import ({$import->box_count} boîte(s), {$import->photo_count} photo(s))",
                 fn () => $import->status === ImportStatus::Completed ?: throw new \RuntimeException($import->status->value.' '.json_encode($import->report['fatal'] ?? $import->report['errors'] ?? '')));
 
-            $this->line('3) Traitement (OCR → extraction IA → indexation), peut prendre plusieurs minutes…');
+            $this->line($llm
+                ? '3) Traitement (OCR → extraction IA → indexation), peut prendre plusieurs minutes…'
+                : '3) Traitement (OCR + extraction par règles → indexation)…');
+            $started = microtime(true);
             $deadline = time() + (int) $this->option('timeout');
             $boxes = Box::whereIn('code', $codes);
             while (time() < $deadline && (clone $boxes)->where('status', '!=', BoxStatus::Review)->exists()) {
-                sleep(5);
+                usleep(500_000);
                 $this->output->write('.');
             }
             $this->newLine();
-            $this->check('Boîtes traitées', fn () => ! (clone $boxes)->where('status', '!=', BoxStatus::Review)->exists() ?: throw new \RuntimeException('délai dépassé'));
+            $seconds = microtime(true) - $started;
+            $this->check(sprintf('Boîtes traitées en %.1f s (%.1f s par photo)', $seconds, $seconds / max(1, $import->photo_count)),
+                fn () => ! (clone $boxes)->where('status', '!=', BoxStatus::Review)->exists() ?: throw new \RuntimeException('délai dépassé'));
 
             $docs = Document::whereIn('box_id', (clone $boxes)->pluck('id'))->get();
-            $this->check('Texte lu par l\'OCR', fn () => $docs->every(fn ($d) => trim((string) $d->ocr_text) !== '') ?: throw new \RuntimeException('page sans texte'));
-            $this->check('Champs extraits par l\'IA', fn () => $docs->where('extraction_status', 'done')->count() === $docs->count() ?: throw new \RuntimeException($docs->pluck('extraction_status')->implode(',')));
+            $this->check('Texte lu par l\'OCR ('.$docs->pluck('ocr_engine')->unique()->implode(', ').')', fn () => $docs->every(fn ($d) => trim((string) $d->ocr_text) !== '') ?: throw new \RuntimeException('page sans texte'));
+            $this->check($llm ? 'Champs extraits par l\'IA' : 'Champs extraits par règles', fn () => $docs->where('extraction_status', 'done')->count() === $docs->count() ?: throw new \RuntimeException($docs->pluck('extraction_status')->implode(',')));
             foreach ($this->option('query') as $query) {
                 $this->check("Recherche « {$query} »", function () use ($search, $query, $codes) {
                     for ($i = 0; $i < 10; $i++) { // indexing is asynchronous in Meilisearch

@@ -5,14 +5,14 @@ namespace App\Services\Ocr;
 use Illuminate\Support\Facades\Http;
 use RuntimeException;
 
-/** Client of the local Python OCR worker (ocr-worker container, internal network only). */
-class OcrClient
+/**
+ * PaddleOCR (+ Tesseract when it finds nothing) in the ocr-worker container, internal network
+ * only. Works on every platform; the fallback of the Windows engine.
+ */
+class PaddleOcrEngine implements OcrService
 {
-    /**
-     * @return array{text: string, language: ?string, confidence: float, is_handwritten: bool,
-     *               handwriting_score: float, blocks: array, engine: string, rotation: int, skew: float,
-     *               width: int, height: int, duration_ms: int}
-     */
+    public const NAME = 'paddle';
+
     public function recognize(string $imagePath): array
     {
         $response = Http::timeout(config('archive.ocr.timeout'))
@@ -33,5 +33,10 @@ class OcrClient
         } catch (\Throwable) {
             return false;
         }
+    }
+
+    public function name(): string
+    {
+        return self::NAME;
     }
 }

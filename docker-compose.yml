@@ -31,8 +31,14 @@ x-app-env: &app-env
   DB_USERNAME: ${DB_USERNAME:-archive}
   DB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD manquant dans .env}
   OCR_URL: http://ocr-worker:8000
-  PIPELINE_WORKERS: ${PIPELINE_WORKERS:-2}
+  # "windows": Snipping Tool OCR on the PC (windows-ocr/, through the gateway), PaddleOCR when
+  # it is not running. "paddle": PaddleOCR only.
+  OCR_ENGINE: ${OCR_ENGINE:-windows}
+  OCR_WINDOWS_URL: http://gateway:8010
+  PIPELINE_WORKERS: ${PIPELINE_WORKERS:-3}
   OLLAMA_URL: http://ollama:11434
+  # Off by default (~2.5 min per page on CPU): fields are extracted by fast rules instead.
+  LLM_ENABLED: ${LLM_ENABLED:-false}
   LLM_MODEL: ${LLM_MODEL:-qwen3:4b-instruct-2507-q4_K_M}
   EXTRACT_WORKERS: 1
   MEILISEARCH_HOST: http://meilisearch:7700
@@ -156,9 +162,11 @@ services:
     environment:
       <<: *app-env
       CONTAINER_ROLE: queue
-      QUEUES: ocr,index
+      # Indexing first: a 0.1 s job that makes the photo's box ready for review, instead of
+      # waiting behind the whole OCR batch (a 1000-photo import would show nothing until the end).
+      QUEUES: index,ocr
     deploy:
-      replicas: ${PIPELINE_WORKERS:-2}
+      replicas: ${PIPELINE_WORKERS:-3}
     depends_on:
       app: { condition: service_healthy }
       ocr-worker: { condition: service_healthy }

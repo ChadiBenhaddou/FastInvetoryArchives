@@ -45,6 +45,15 @@ class ExtractMetadataJob implements ShouldQueue
             return;
         }
 
+        if (! config('archive.llm.enabled')) {
+            // LLM switched off (archive:reprocess --extraction, or jobs queued before): rules instead.
+            $pipeline->applyRules($doc);
+            $doc->save();
+            $pipeline->afterExtraction($doc);
+
+            return;
+        }
+
         $doc->update(['extraction_status' => 'processing']);
         ProcessingLog::record($doc->image_id, 'extract', 'started', "attempt {$this->attempts()}");
 

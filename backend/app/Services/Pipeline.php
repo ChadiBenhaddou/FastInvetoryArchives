@@ -12,15 +12,19 @@ use App\Models\Box;
 use App\Models\Document;
 use App\Models\Image;
 use App\Models\ProcessingLog;
+use App\Services\Extraction\RuleExtractor;
 
 /**
  * Processing of imported photos, all local, one queued job per step and photo:
- *   RunOcrJob (OCR worker) → ExtractMetadataJob (Ollama) → IndexDocumentJob (Meilisearch)
+ *   RunOcrJob (OCR + fields by rules) → IndexDocumentJob (Meilisearch)
+ *   with LLM_ENABLED: RunOcrJob → ExtractMetadataJob (Ollama) → IndexDocumentJob
  * A box moves from "processing" to "review" when every document photo went through
  * every step (successfully or not: failures are flagged for review, never lost).
  */
 class Pipeline
 {
+    public function __construct(private RuleExtractor $rules) {}
+
     /** Queues the processing of every document photo of a freshly imported box. */
     public function startBox(Box $box): int
     {
@@ -39,9 +43,10 @@ class Pipeline
     }
 
     /**
-     * OCR ended (success or final failure). The document is indexed right away, so its
-     * text is searchable within seconds; the LLM extraction (much slower on CPU) follows
-     * and re-indexes it with the extracted fields.
+     * OCR ended (success or final failure). By default the fields are extracted here by rules
+     * (milliseconds) and the document is indexed once, complete: a box is ready for review
+     * seconds after its photos are read. With LLM_ENABLED the document is indexed right away
+     * (searchable within seconds) and the LLM extraction (minutes on CPU) re-indexes it later.
      */
     public function afterOcr(Image $image): void
     {
@@ -53,14 +58,30 @@ class Pipeline
         }
         $doc->index_status = 'pending';
         $hasText = $image->ocr_status === OcrStatus::Done && trim((string) $doc->ocr_text) !== '';
-        // Nothing to read: no extraction, but still indexed so the photo is found by box / place.
-        $doc->extraction_status = $hasText ? 'pending' : 'skipped';
+        $llm = config('archive.llm.enabled');
+        if ($hasText && ! $llm) {
+            $this->applyRules($doc);
+        } else {
+            // Nothing to read: no extraction, but still indexed so the photo is found by box / place.
+            $doc->extraction_status = $hasText ? 'pending' : 'skipped';
+        }
         $doc->save();
 
         IndexDocumentJob::dispatch($doc->id);
-        if ($hasText) {
+        if ($hasText && $llm) {
             ExtractMetadataJob::dispatch($doc->id);
         }
+    }
+
+    /** Fields by RuleExtractor (not saved here). Also used to re-run the extraction with the LLM off. */
+    public function applyRules(Document $doc): void
+    {
+        $result = $this->rules->extract((string) $doc->ocr_text);
+        $doc->fill($result['fields'] + ['extraction_status' => 'done', 'extraction_model' => RuleExtractor::NAME]);
+        $doc->review_reasons = $this->reviewReasons($doc);
+        $doc->needs_review = $doc->review_reasons !== [];
+        ProcessingLog::record($doc->image_id, 'extract', 'success',
+            'règles : '.($result['found'] ? implode(', ', $result['found']) : 'rien trouvé'), $result['duration_ms']);
     }
 
     public function afterExtraction(Document $doc): void
@@ -150,7 +171,8 @@ class Pipeline
             return $ms ? (int) ceil($waiting / $workers * $ms / 1000) : null;
         };
         $ocrEta = $eta($ocrWaiting, $ocrMs, $ocrWorkers);
-        $extractEta = $eta($extractWaiting, $extractMs, $extractWorkers);
+        // Without the LLM the fields are extracted inside the OCR job: nothing else to wait for.
+        $extractEta = config('archive.llm.enabled') ? $eta($extractWaiting, $extractMs, $extractWorkers) : 0;
 
         return [
             'images' => [

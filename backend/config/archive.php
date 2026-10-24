@@ -32,9 +32,17 @@ return [
     ],
 
     'ocr' => [
+        // "windows": Snipping Tool OCR on the Windows PC (windows-ocr/), PaddleOCR when it is
+        // unavailable. "paddle": PaddleOCR only (Ubuntu PCs, or to compare).
+        'engine' => env('OCR_ENGINE', 'windows'),
         'url' => env('OCR_URL', 'http://ocr-worker:8000'),
         // A large photo on a busy CPU can take a while; the job timeout is above this.
         'timeout' => (int) env('OCR_TIMEOUT', 300),
+        'windows' => [
+            // Through the gateway: the only container that can reach the PC (127.0.0.1:8010).
+            'url' => env('OCR_WINDOWS_URL', 'http://gateway:8010'),
+            'timeout' => (int) env('OCR_WINDOWS_TIMEOUT', 120),
+        ],
     ],
 
     'pipeline' => [
@@ -44,7 +52,10 @@ return [
     ],
 
     // Local LLM (Ollama, internal network only) used to extract metadata from OCR text.
+    // Off by default: ~2.5 min per page on the CPU. Fast rules (RuleExtractor) fill the fields
+    // instead, and a box is ready for review seconds after its photos are read.
     'llm' => [
+        'enabled' => filter_var(env('LLM_ENABLED', false), FILTER_VALIDATE_BOOLEAN),
         'url' => env('OLLAMA_URL', 'http://ollama:11434'),
         'model' => env('LLM_MODEL', 'qwen3:4b-instruct-2507-q4_K_M'),
         'timeout' => (int) env('LLM_TIMEOUT', 900),

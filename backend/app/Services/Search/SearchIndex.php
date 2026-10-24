@@ -3,6 +3,7 @@
 namespace App\Services\Search;
 
 use App\Models\Document;
+use App\Support\ArabicText;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Support\Facades\Http;
 
@@ -17,7 +18,8 @@ class SearchIndex
     public const SETTINGS = [
         // Order = relevance weight: a match in the title counts more than one in the body.
         'searchableAttributes' => [
-            'title', 'reference_number', 'persons', 'organizations', 'keywords', 'summary', 'ocr_text', 'box_code',
+            'title', 'title_search', 'reference_number', 'persons', 'organizations', 'keywords', 'summary',
+            'ocr_text', 'ocr_text_search', 'box_code',
         ],
         'filterableAttributes' => [
             'box_code', 'box_id', 'doc_type', 'year', 'room', 'shelf', 'agent_name', 'device', 'language', 'needs_review',
@@ -98,6 +100,10 @@ class SearchIndex
             'organizations' => $doc->organizations ?? [],
             'keywords' => $doc->keywords ?? [],
             'ocr_text' => $doc->ocr_text,
+            // Normalized copies (hamza, ة/ه, ى/ي, tatweel, diacritics, digits): queries are
+            // normalized the same way, so any spelling of a word finds it.
+            'title_search' => ArabicText::forSearch($doc->title),
+            'ocr_text_search' => ArabicText::forSearch($doc->ocr_text),
             'language' => $doc->language,
             'doc_date' => $doc->doc_date?->format('Y-m-d'),
             'doc_date_ts' => $doc->doc_date?->getTimestamp(),
