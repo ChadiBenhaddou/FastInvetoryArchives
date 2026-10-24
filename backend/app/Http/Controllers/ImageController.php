@@ -10,16 +10,14 @@ use Symfony\Component\HttpFoundation\BinaryFileResponse;
 /** Photos are served only to logged-in users (confidential archives), never as public files. */
 class ImageController extends Controller
 {
-    private const HEADERS = ['Content-Type' => 'image/jpeg', 'Cache-Control' => 'private, max-age=604800'];
-
     public function show(Image $image): BinaryFileResponse
     {
-        return response()->file($this->path($image), self::HEADERS);
+        return $this->jpeg($this->path($image));
     }
 
     public function thumb(Image $image, Thumbnails $thumbs): BinaryFileResponse
     {
-        return response()->file($thumbs->for($this->path($image), "img-{$image->id}"), self::HEADERS);
+        return $this->jpeg($thumbs->for($this->path($image), "img-{$image->id}"));
     }
 
     private function path(Image $image): string

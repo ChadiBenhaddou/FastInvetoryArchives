@@ -89,6 +89,21 @@ class ReviewAndSearchTest extends TestCase
         $this->assertNotFalse(@imagecreatefromstring($thumb->streamedContent() ?: file_get_contents($thumb->getFile()->getPathname())));
     }
 
+    public function test_the_browser_must_revalidate_photos_because_ids_are_reused(): void
+    {
+        $image = $this->box()->images()->first();
+
+        $photo = $this->actingAs($this->reviewer)->get("/api/images/{$image->id}")->assertOk();
+        $this->assertStringContainsString('no-cache', $photo->headers->get('Cache-Control'));
+        $this->assertStringContainsString('private', $photo->headers->get('Cache-Control'));
+        $this->assertStringNotContainsString('public', $photo->headers->get('Cache-Control'));
+        $etag = $photo->headers->get('ETag');
+        $this->assertNotEmpty($etag);
+
+        $this->get("/api/images/{$image->id}", ['If-None-Match' => $etag])->assertStatus(304);
+        $this->get("/api/images/{$image->id}", ['If-None-Match' => '"another-photo"'])->assertOk();
+    }
+
     public function test_review_saves_corrections_audits_them_and_closes_the_box(): void
     {
         $box = $this->box();

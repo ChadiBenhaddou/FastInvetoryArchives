@@ -12,8 +12,10 @@ class Thumbnails
     /** Path of the cached thumbnail for $source (created if needed). */
     public function for(string $source, string $cacheKey): string
     {
-        $target = storage_path("app/thumbs/{$cacheKey}.jpg");
-        if (is_file($target) && filemtime($target) >= filemtime($source)) {
+        // Size and date in the name: ids are reused after a reset or a restore (which may keep
+        // the photos' old dates), so the id alone could return the preview of another photo.
+        $target = storage_path(sprintf('app/thumbs/%s-%x-%x.jpg', $cacheKey, filesize($source), filemtime($source)));
+        if (is_file($target)) {
             return $target;
         }
 

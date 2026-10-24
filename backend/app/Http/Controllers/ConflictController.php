@@ -62,7 +62,7 @@ class ConflictController extends Controller
             $path = $thumbs->for($path, "conflict-{$conflict->id}-{$sequence}");
         }
 
-        return response()->file($path, ['Content-Type' => 'image/jpeg', 'Cache-Control' => 'private, max-age=3600']);
+        return $this->jpeg($path);
     }
 
     public function resolve(Request $request, BoxConflict $conflict, ConflictResolver $resolver): JsonResponse
