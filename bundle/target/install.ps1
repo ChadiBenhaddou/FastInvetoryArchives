@@ -1,4 +1,4 @@
-# Installation (ou mise à jour) hors ligne de l'Inventaire des archives — Windows.
+﻿# Installation (ou mise à jour) hors ligne de l'Inventaire des archives — Windows.
 # A lancer depuis la clé USB :  clic droit > Exécuter avec PowerShell
 #   ou :  powershell -ExecutionPolicy Bypass -File E:\ArchiveInventory-1.0.0\install.ps1
 # Une installation existante est détectée : c'est alors une MISE A JOUR (sauvegarde d'abord,

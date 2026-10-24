@@ -1,4 +1,4 @@
-# Démarre l'Inventaire des archives (si Docker Desktop vient d'être lancé, patienter qu'il soit prêt).
+﻿# Démarre l'Inventaire des archives (si Docker Desktop vient d'être lancé, patienter qu'il soit prêt).
 . (Join-Path $PSScriptRoot 'common.ps1')
 Write-Step 'Démarrage'
 for ($i = 0; $i -lt 30 -and -not (Test-DockerRunning); $i++) { Write-Host '      attente de Docker…'; Start-Sleep 10 }

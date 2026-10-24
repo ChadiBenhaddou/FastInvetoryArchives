@@ -1,4 +1,4 @@
-# Vérification de l'installation, à faire RÉSEAU COUPÉ :
+﻿# Vérification de l'installation, à faire RÉSEAU COUPÉ :
 #   services prêts, aucun accès Internet possible depuis l'application, puis un export
 #   d'exemple traité de bout en bout (import → OCR → IA → recherche) et supprimé ensuite.
 # -DisableNetwork : désactive les cartes réseau du PC pendant le test puis les réactive

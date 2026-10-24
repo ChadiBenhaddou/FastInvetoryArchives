@@ -1,4 +1,4 @@
-# Sauvegarde vers un disque USB (ou tout autre dossier) :
+﻿# Sauvegarde vers un disque USB (ou tout autre dossier) :
 #   - base de données + index de recherche (sauvegarde du jour, faite maintenant),
 #   - toutes les photos (seules les nouvelles sont copiées après la première fois),
 #   - la clé de chiffrement de l'application (nécessaire pour relire les codes PIN).

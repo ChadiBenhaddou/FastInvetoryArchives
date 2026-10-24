@@ -1,0 +1,5 @@
+# Windows PowerShell 5.1 (the one on every Windows PC) reads a .ps1 without BOM as ANSI:
+# accents and "—" in a UTF-8 script then break its parsing. Keep the BOM.
+[*.ps1]
+charset = utf-8-bom
+end_of_line = crlf

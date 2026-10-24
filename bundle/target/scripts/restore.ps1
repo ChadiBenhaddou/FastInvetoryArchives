@@ -1,4 +1,4 @@
-# Restauration depuis une sauvegarde USB (backup.ps1). REMPLACE la base actuelle.
+﻿# Restauration depuis une sauvegarde USB (backup.ps1). REMPLACE la base actuelle.
 # Usage : restore.ps1 -From E:\ArchiveInventory-Sauvegarde [-Backup 2026-10-22_235926]
 #   ou, pour revenir à une sauvegarde faite sur le PC (nuit, ou sécurité avant restauration) :
 #         restore.ps1 -From C:\ArchiveInventory\backups [-Backup ...]   (les photos ne sont pas touchées)
