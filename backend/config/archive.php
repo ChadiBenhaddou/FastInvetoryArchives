@@ -11,12 +11,16 @@ return [
     |   processing/  ZIPs being imported (claimed from import/ or uploaded)
     |   imported/    ZIPs successfully imported
     |   failed/      ZIPs that failed, each with an error .txt
-    |   storage/     box photos ("archive" disk)
+    |   storage/     box photos ("archive" disk; ARCHIVE_PHOTOS_PATH elsewhere, see below)
     |   backups/     default backup destination
     */
     'root' => env('ARCHIVE_ROOT', storage_path('app/archive-dev')),
     // The same folder as the user sees it on the host (display only).
     'host_root' => env('ARCHIVE_HOST_PATH', env('ARCHIVE_ROOT', storage_path('app/archive-dev'))),
+    // Box photos as the user sees them (display only; the "archive" disk of config/filesystems.php
+    // reads ARCHIVE_PHOTOS_PATH). The portable Windows mode keeps them in its donnees\ folder, with
+    // the database: that one folder is all a second PC needs.
+    'host_photos' => env('ARCHIVE_PHOTOS_HOST_PATH', rtrim(env('ARCHIVE_HOST_PATH', env('ARCHIVE_ROOT', storage_path('app/archive-dev'))), '/\\').'/storage'),
 
     'import' => [
         // Contract with the phone app (shared with mobile/, see shared/manifest.schema.json).

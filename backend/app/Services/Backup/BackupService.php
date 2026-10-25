@@ -16,7 +16,7 @@ use RuntimeException;
  *   search.dump       Meilisearch dump (the index can also be rebuilt from the database)
  *   photos.csv        every photo path + SHA-256, to verify a copy of the photos folder
  *   backup.json       what is inside, app version, counts
- * The photos themselves are already plain files in ARCHIVE_ROOT/storage; the
+ * The photos themselves are already plain files (ARCHIVE_ROOT/storage, or ARCHIVE_PHOTOS_PATH); the
  * "backup to USB" script mirrors that folder + the latest backup folder to the drive
  * (incremental: only new photos are copied).
  */
@@ -51,7 +51,7 @@ class BackupService
             'tables' => $tables,
             'photos' => $photos,
             'search_dump' => $search,
-            'photos_folder' => rtrim(config('archive.host_root'), '/\\').'/storage',
+            'photos_folder' => config('archive.host_photos'),
         ];
         file_put_contents("{$dir}/backup.json", json_encode($summary, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
 

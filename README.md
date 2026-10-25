@@ -212,11 +212,14 @@ les pages lues avec une confiance faible restent signalées « à réviser ». J
 
 La même application, sans Docker ni WSL ni réglage du BIOS : les programmes (PHP, nginx, Meilisearch, les deux
 OCR) sont **déjà dans le dossier**, rien n'est installé sauf Python. La base de données est un fichier SQLite.
-Les données sont rangées comme avec Docker (`import\`, `storage\`, `backups\`… voir § 4.3).
+**Toutes les données sont dans un seul dossier, `donnees\`** (base, photos, index de recherche, clés) : c'est ce
+dossier qui passe d'un PC à l'autre (§ 4.6). Les dossiers d'import (`import\`, `imported\`, `failed\`) et
+`backups\` sont comme avec Docker (§ 4.3).
 
 **Installation (une seule fois)** — clé USB `ArchiveInventory-<version>-portable` :
 
 1. Copier **tout le dossier** sur le PC, par exemple vers `C:\ArchiveInventory` (chemin **sans espace ni accent**).
+   Ne pas démarrer l'application depuis la clé elle-même : ses données seraient sur la clé.
 2. Installer `prerequis\python-3.12.10-amd64.exe` en cochant **Add python.exe to PATH**.
 3. Pour l'OCR Windows (§ 4.4) : mettre à jour l'Outil Capture d'écran depuis le Microsoft Store **avant** de couper
    le réseau. Rien d'autre à faire : ses fichiers sont copiés automatiquement au premier démarrage.
@@ -233,8 +236,10 @@ fermer arrête l'application. Un programme qui s'arrête est redémarré tout se
 | `Sauvegarder.bat` | sauvegarde vers un disque USB (§ 10) |
 | `Restaurer.bat E:\ArchiveInventory-Sauvegarde` | restauration, application arrêtée (§ 10) |
 | `Verifier.bat` | vérification complète avec un export d'exemple (§ 6), application démarrée |
-| `parametres.env` | réglages (port, nombre de lectures en parallèle…), créé au premier démarrage |
-| `systeme\` | base de données, index de recherche, journaux (`systeme\journaux\`) — ne pas modifier |
+| `Envoyer-donnees.bat` / `Recevoir-donnees.bat` | passer les données à un autre PC (§ 4.6) |
+| `donnees\` | **les données** : `base\archive.sqlite`, `photos\<boîte>\`, `recherche\`, `cles.env` — ne pas modifier |
+| `parametres.env` | réglages **de ce PC** (port, nombre de lectures en parallèle, `PC_NAME`…), créé au premier démarrage |
+| `systeme\` | ce qui est propre à ce PC : journaux (`systeme\journaux\`), fichiers de l'OCR Windows, caches |
 
 Pour démarrer avec la session Windows : clic droit sur `Demarrer.bat` → *Créer un raccourci*, puis déplacer le
 raccourci dans le dossier qui s'ouvre avec **Win+R** → `shell:startup`.
@@ -244,8 +249,43 @@ raccourci dans le dossier qui s'ouvre avec **Win+R** → `shell:startup`.
 disponible. Si le port 80 est déjà pris (par exemple par l'application Docker), mettre `HTTP_PORT=8080` dans `parametres.env`.
 
 **Mise à jour** : `Arreter.bat`, remplacer les dossiers `app\` et `runtime\` et les fichiers `.bat` par ceux de la
-nouvelle clé (ne pas toucher aux autres dossiers ni à `parametres.env`), puis `Demarrer.bat` (la base est mise à
-jour automatiquement). Faire une sauvegarde USB avant.
+nouvelle clé (ne pas toucher à `donnees\`, aux autres dossiers ni à `parametres.env`), puis `Demarrer.bat` (la base
+est mise à jour automatiquement). Faire une sauvegarde USB avant. Mettre à jour **tous les PC** à la même version.
+
+### 4.6 Deux PC : passer les données de l'un à l'autre
+
+Pour des PC utilisés **l'un après l'autre** (on travaille sur le PC 1, puis on continue sur le PC 2) : les données
+du PC qui a travaillé en dernier **remplacent** celles de l'autre. Ce n'est pas une fusion : si les deux PC
+travaillent en même temps, le travail de celui qui reçoit est perdu (l'application prévient, voir plus bas).
+
+**Avec les deux fichiers fournis (conseillé)** — seules les photos nouvelles sont copiées, l'application est
+arrêtée pendant la copie puis redémarrée toute seule :
+
+1. Sur le PC qui a travaillé : brancher une clé USB, double-clic sur **`Envoyer-donnees.bat`**, choisir la clé. Les
+   données sont copiées dans `<clé>\ArchiveInventory-Donnees\`.
+2. Sur l'autre PC : brancher la clé, double-clic sur **`Recevoir-donnees.bat`**, choisir la clé, taper `REMPLACER`.
+   La base que ce PC avait est d'abord gardée dans `backups\avant-reception-<date>\`.
+
+**À la main** : `Arreter.bat` sur les deux PC, puis copier le dossier `donnees` du premier PC à la place du dossier
+`donnees` du second (par une clé ou un disque), puis `Demarrer.bat`. Toute la copie est refaite à chaque fois
+(photos comprises) : plus long que les deux fichiers ci-dessus.
+
+Ce que l'application vérifie :
+
+- **au démarrage** avec des données venant d'un autre PC : elle l'indique (« Données venant du PC … ») et contrôle
+  la base ; si la copie a été faite **application démarrée** sur l'autre PC, elle prévient que les dernières
+  minutes de travail peuvent manquer, et refuse de démarrer si la base est abîmée (recopier, application arrêtée) ;
+- **à la réception** : refuse une copie interrompue ou faite application démarrée, et prévient en rouge si ce PC a
+  été utilisé **après** l'autre (son travail récent serait perdu) ;
+- **versions** : des données d'une version plus récente sont refusées (mettre d'abord ce PC à jour) ; d'une version
+  différente, l'index de recherche est reconstruit automatiquement.
+
+Les comptes, mots de passe et codes PIN des téléphones suivent les données (`donnees\cles.env`). Chaque PC garde
+ses réglages (`parametres.env`) et ses fichiers d'OCR Windows. Donner un nom à chaque PC dans `parametres.env`
+(`PC_NAME=Bureau 1`) pour des messages plus clairs.
+
+> Le dossier `donnees` contient **toutes les données confidentielles** : la clé qui le transporte se range sous clé
+> comme une sauvegarde (§ 10), et s'efface ou se chiffre (BitLocker To Go) après usage.
 
 ## 5. Installer le PC (Ubuntu)
 

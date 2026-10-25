@@ -29,7 +29,7 @@ class BackupController extends Controller
                     'finished_at' => $b->finished_at?->toIso8601String(),
                 ]),
             'last_success_at' => $last?->finished_at?->toIso8601String(),
-            'photos_folder' => rtrim(config('archive.host_root'), '/\\').'/storage',
+            'photos_folder' => config('archive.host_photos'),
         ]);
     }
 

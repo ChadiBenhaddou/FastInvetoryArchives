@@ -17,7 +17,13 @@ Windows "job": if the launcher window is closed, nothing keeps running behind it
   launcher.py sauvegarde [DEST]     backup to a USB drive (database, search index, photos)
   launcher.py restauration DIR      restore a backup (application stopped)
   launcher.py verifier              end-to-end test with a sample export (application started)
+  launcher.py envoyer [DEST]        copy this PC's donnees\\ to a USB drive (only what changed)
+  launcher.py recevoir [SOURCE]     replace this PC's donnees\\ by the copy from another PC
   launcher.py artisan ...           any Laravel command, with the application's settings
+
+Everything another PC needs is in ONE folder, donnees\\ (database, photos, search index, keys):
+two PCs used one at a time stay in step by copying it, application stopped on both. What
+belongs to one PC (settings, logs, Windows OCR files, import folders, nightly backups) stays out.
 """
 
 import argparse
@@ -28,6 +34,7 @@ import gzip
 import json
 import msvcrt
 import os
+import re
 import secrets
 import shutil
 import socket
@@ -45,10 +52,17 @@ HERE = Path(__file__).resolve().parent          # <root>\app\portable
 ROOT = HERE.parent.parent                       # the folder holding Demarrer.bat
 APP = ROOT / "app"
 RUNTIME = ROOT / "runtime"
-SYSTEM = ROOT / "systeme"                       # this PC's state: database, index, logs
+SYSTEM = ROOT / "systeme"                       # this PC only: logs, caches, Windows OCR files
 LOGS = SYSTEM / "journaux"
-SETTINGS = ROOT / "parametres.env"
-DATABASE = SYSTEM / "base" / "archive.sqlite"
+SETTINGS = ROOT / "parametres.env"              # this PC only: port, workers...
+DATA = ROOT / "donnees"                         # what a second PC needs, nothing else
+DATABASE = DATA / "base" / "archive.sqlite"
+PHOTOS = DATA / "photos"
+SEARCH_DATA = DATA / "recherche"
+KEYS = DATA / "cles.env"                        # APP_KEY (phone PINs) and the search engine key
+DATA_INFO = DATA / "INFO.json"                  # which PC used it last, running or stopped
+SECRET_KEYS = ("APP_KEY", "MEILI_MASTER_KEY")
+SYNC_FOLDER = "ArchiveInventory-Donnees"        # name of the copy on the USB drive
 STOP_FILE = SYSTEM / "arret.demande"
 STATE_FILE = SYSTEM / "etat.json"
 
@@ -59,7 +73,7 @@ PY_PACKAGES = RUNTIME / "python"
 PADDLE_MODELS = RUNTIME / "paddle-models"
 BACKEND = APP / "backend"
 WINDOWS_OCR_FILES = ("oneocr.dll", "oneocr.onemodel", "onnxruntime.dll")
-DATA_FOLDERS = ("import", "processing", "imported", "failed", "storage", "backups")
+DATA_FOLDERS = ("import", "processing", "imported", "failed", "backups")
 
 # Written to parametres.env on the first start; the user may change them there.
 DEFAULTS = {
@@ -85,9 +99,13 @@ SETTINGS_HELP = """\
 # PADDLE_OCR         on/off : PaddleOCR (secours de l'OCR Windows, ~1 Go de mémoire)
 # OCR_PROCESSES      processus PaddleOCR (~1 Go de mémoire chacun)
 # OPEN_BROWSER       1 = ouvrir le navigateur au démarrage
+# PC_NAME            nom de ce PC dans les messages de synchronisation (par défaut : le nom Windows)
 #
-# APP_KEY et MEILI_MASTER_KEY sont des clés secrètes créées à la première installation :
-# ne pas les changer (APP_KEY chiffre les codes PIN des téléphones ; elle est aussi dans les sauvegardes).
+# Les clés secrètes ne sont pas ici mais dans donnees\\cles.env (elles suivent les données d'un PC à l'autre).
+"""
+KEYS_HELP = """\
+# Clés secrètes de ces données, créées à la première installation. NE PAS MODIFIER :
+# APP_KEY chiffre les codes PIN des téléphones (elle est aussi dans les sauvegardes USB).
 """
 
 # Internal ports, all on 127.0.0.1. 8010 is the one the Docker mode's Windows OCR service uses too.
@@ -120,10 +138,10 @@ class Abort(Exception):
 
 # ------------------------------------------------------------------ settings
 
-def read_settings() -> dict:
+def read_env_file(path: Path) -> dict:
     values = {}
-    if SETTINGS.exists():
-        for line in SETTINGS.read_text(encoding="utf-8-sig").splitlines():
+    if path.exists():
+        for line in path.read_text(encoding="utf-8-sig").splitlines():
             line = line.strip()
             if not line or line.startswith("#") or "=" not in line:
                 continue
@@ -132,22 +150,52 @@ def read_settings() -> dict:
     return values
 
 
+def read_settings() -> dict:
+    return read_env_file(SETTINGS) | read_env_file(KEYS)
+
+
+def write_keys(keys: dict):
+    KEYS.parent.mkdir(parents=True, exist_ok=True)
+    KEYS.write_text(KEYS_HELP + "".join(f"{k}={keys[k]}\n" for k in SECRET_KEYS), encoding="utf-8")
+
+
 def ensure_settings() -> dict:
-    values = read_settings()
+    settings, keys = read_env_file(SETTINGS), read_env_file(KEYS)
     created = not SETTINGS.exists()
-    missing = {k: v for k, v in DEFAULTS.items() if k not in values}
-    if "APP_KEY" not in values:
-        missing["APP_KEY"] = "base64:" + base64.b64encode(os.urandom(32)).decode()
-    if "MEILI_MASTER_KEY" not in values:
-        missing["MEILI_MASTER_KEY"] = secrets.token_hex(24)
+    # An earlier version kept the keys in parametres.env: they move to donnees\cles.env.
+    old = {k: settings[k] for k in SECRET_KEYS if k in settings}
+    if not all(k in keys for k in SECRET_KEYS):
+        keys = old | keys
+        keys.setdefault("APP_KEY", "base64:" + base64.b64encode(os.urandom(32)).decode())
+        keys.setdefault("MEILI_MASTER_KEY", secrets.token_hex(24))
+        write_keys(keys)
+    if old:
+        lines = SETTINGS.read_text(encoding="utf-8-sig").splitlines()
+        SETTINGS.write_text("".join(l + "\n" for l in lines if l.split("=", 1)[0].strip() not in SECRET_KEYS
+                                    and "APP_KEY et MEILI_MASTER_KEY" not in l and "ne pas les changer (APP_KEY" not in l),
+                            encoding="utf-8")
+        settings = {k: v for k, v in settings.items() if k not in SECRET_KEYS}
+    missing = {k: v for k, v in DEFAULTS.items() if k not in settings}
     if missing:
         with open(SETTINGS, "a", encoding="utf-8") as f:
             if created:
                 f.write(SETTINGS_HELP + "\n")
             for key, value in missing.items():
                 f.write(f"{key}={value}\n")
-        values.update(missing)
-    return values
+        settings.update(missing)
+    return settings | keys
+
+
+def move_to_data_folder():
+    """First start of this version on a PC set up by the previous one: database and index were in
+    systeme\\, photos in storage\\. They move (same drive: instant) into donnees\\."""
+    for old, new in ((SYSTEM / "base", DATABASE.parent), (SYSTEM / "recherche", SEARCH_DATA), (ROOT / "storage", PHOTOS)):
+        if old.is_dir() and any(old.iterdir()) and not (new.exists() and any(new.iterdir())):
+            new.parent.mkdir(parents=True, exist_ok=True)
+            if new.exists():
+                new.rmdir()
+            old.rename(new)
+            ok(f"Déplacé dans {DATA} : {old.name}")
 
 
 def app_version() -> str:
@@ -205,6 +253,8 @@ def php_env(cfg) -> dict:
         "MEILISEARCH_KEY": cfg["MEILI_MASTER_KEY"],
         "ARCHIVE_ROOT": posix(ROOT),
         "ARCHIVE_HOST_PATH": str(ROOT),
+        "ARCHIVE_PHOTOS_PATH": posix(PHOTOS),
+        "ARCHIVE_PHOTOS_HOST_PATH": str(PHOTOS),
         "MANIFEST_SCHEMA": str(APP / "shared" / "manifest.schema.json"),
     })
     return env
@@ -322,7 +372,7 @@ def ensure_folders():
     (ROOT / "backups" / ".search-dumps").mkdir(exist_ok=True)
     for sub in ("app", "framework/cache/data", "framework/sessions", "framework/views", "logs"):
         (SYSTEM / "laravel" / sub).mkdir(parents=True, exist_ok=True)
-    for path in (DATABASE.parent, LOGS, SYSTEM / "recherche", SYSTEM / "ocr-windows"):
+    for path in (DATABASE.parent, PHOTOS, SEARCH_DATA, LOGS, SYSTEM / "ocr-windows"):
         path.mkdir(parents=True, exist_ok=True)
 
 
@@ -383,6 +433,83 @@ def admin_exists() -> bool:
             return db.execute("SELECT count(*) FROM users WHERE role = 'admin'").fetchone()[0] > 0
     except sqlite3.Error:
         return False
+
+
+def database_ok() -> bool:
+    with closing(sqlite3.connect(DATABASE, timeout=30)) as db:
+        return db.execute("PRAGMA quick_check").fetchone()[0] == "ok"
+
+
+def checkpoint_database():
+    """Puts the WAL back into archive.sqlite and removes it (closing the last connection does):
+    the database is then a single file, safe to copy. The PHP processes are killed, so SQLite
+    would otherwise leave the latest changes in archive.sqlite-wal."""
+    if DATABASE.exists():
+        try:
+            with closing(sqlite3.connect(DATABASE, timeout=30)) as db:
+                db.execute("PRAGMA wal_checkpoint(TRUNCATE)")
+        except sqlite3.Error as e:
+            warn(f"Base de données : {e}")
+
+
+# ------------------------------------------------------------------ the data folder between PCs
+
+def read_info(folder: Path = DATA) -> dict:
+    try:
+        return json.loads((folder / "INFO.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+
+
+def write_info(**changes):
+    info = read_info() | changes
+    DATA.mkdir(parents=True, exist_ok=True)
+    DATA_INFO.write_text(json.dumps(info, indent=2, ensure_ascii=False), encoding="utf-8")
+
+
+def pc_name() -> str:
+    """How this PC is named in donnees\\INFO.json: PC_NAME in parametres.env, or the Windows name."""
+    return read_env_file(SETTINGS).get("PC_NAME") or socket.gethostname()
+
+
+def now_iso() -> str:
+    return datetime.datetime.now().isoformat(timespec="seconds")
+
+
+def last_use(info: dict) -> str:
+    return info.get("stopped_at") or info.get("started_at") or ""
+
+
+def version_key(version: str) -> tuple:
+    return tuple(int(n) for n in re.findall(r"\d+", version)) or (0,)
+
+
+def check_data_folder() -> bool:
+    """At start: where does donnees\\ come from? Returns True when the search index must be rebuilt."""
+    info, here = read_info(), pc_name()
+    if not DATABASE.exists():
+        return False
+    other_pc = bool(info.get("pc")) and info["pc"] != here
+    if other_pc:
+        ok(f"Données venant du PC {info['pc']} (utilisées le {last_use(info).replace('T', ' à ')})")
+        if info.get("running"):
+            warn(f"Elles ont été copiées pendant que l'application tournait sur {info['pc']} : "
+                 "le travail des dernières minutes peut manquer. La prochaine fois, l'arrêter avant de copier.")
+    if other_pc or info.get("running"):
+        if not database_ok():
+            raise Abort("La base de données est abîmée (copie interrompue ou faite application démarrée ?). "
+                        "Recopier le dossier donnees depuis l'autre PC, application arrêtée, ou restaurer une sauvegarde.")
+        ok("Base de données vérifiée")
+    data_version = info.get("version")
+    if data_version and version_key(data_version) > version_key(app_version()):
+        raise Abort(f"Ces données viennent d'une version plus récente ({data_version}) que celle de ce PC "
+                    f"({app_version()}) : mettre ce PC à jour d'abord.")
+    if not (SEARCH_DATA / "data.ms").exists() or (data_version and data_version != app_version()):
+        # Another version of the search engine may not read this index: rebuilt from the database.
+        shutil.rmtree(SEARCH_DATA, ignore_errors=True)
+        SEARCH_DATA.mkdir(parents=True, exist_ok=True)
+        return True
+    return False
 
 
 # ------------------------------------------------------------------ processes
@@ -489,13 +616,13 @@ def build_services(cfg, windows_ocr: str) -> dict[str, list[Service]]:
     worker = [php_exe(), "artisan", "queue:work", "--sleep=2", "--tries=3", "--timeout=3700", "--max-time=3600"]
     php_cgi_env = dict(env, PHP_FCGI_MAX_REQUESTS="10000")
     groups = {
-        "recherche": [Service("recherche", [str(MEILI_EXE), "--db-path", str(SYSTEM / "recherche" / "data.ms"),
+        "recherche": [Service("recherche", [str(MEILI_EXE), "--db-path", str(SEARCH_DATA / "data.ms"),
                                             "--http-addr", f"127.0.0.1:{MEILI_PORT}", "--env", "production",
                                             "--master-key", cfg["MEILI_MASTER_KEY"], "--no-analytics",
                                             "--dump-dir", str(ROOT / "backups" / ".search-dumps"),
                                             # The PC is shared with the OCR: bounded while indexing.
                                             "--max-indexing-memory", "1Gb", "--max-indexing-threads", "2"],
-                              SYSTEM / "recherche", os.environ.copy(), f"http://127.0.0.1:{MEILI_PORT}/health")],
+                              SEARCH_DATA, os.environ.copy(), f"http://127.0.0.1:{MEILI_PORT}/health")],
         "ocr": [],
         "web": [Service(f"php-{i + 1}", [php_exe(cgi=True), "-b", f"127.0.0.1:{PHP_FIRST_PORT + i}"],
                         BACKEND / "public", php_cgi_env) for i in range(int(cfg["PHP_WORKERS"]))]
@@ -580,9 +707,11 @@ def start(args):
     step("1. Vérifications")
     check_layout()
     ok(f"Python {sys.version.split()[0]}")
+    move_to_data_folder()
     cfg = ensure_settings()
     ok(f"Paramètres : {SETTINGS}")
     ensure_folders()
+    reindex = check_data_folder()
     ensure_vc_runtime()
     write_php_ini()
     write_nginx_conf(cfg)
@@ -615,6 +744,7 @@ def start(args):
     groups = build_services(cfg, windows_ocr)
     services: list[Service] = []
     try:
+        write_info(pc=pc_name(), running=True, started_at=now_iso(), version=app_version())
         for s in groups["recherche"]:
             s.start()
             services.append(s)
@@ -624,7 +754,11 @@ def start(args):
         release_interrupted_jobs()
         if not wait_for(groups["recherche"][0].ready, 60):
             raise Abort(f"Le moteur de recherche ne démarre pas. Journal : {LOGS / 'recherche.log'}")
-        artisan(cfg, "archive:search-setup", check=False)
+        if reindex:
+            print("      index de recherche reconstruit depuis la base (quelques minutes pour beaucoup de documents)…", flush=True)
+            artisan(cfg, "archive:search-setup", "--reindex", check=False)
+        else:
+            artisan(cfg, "archive:search-setup", check=False)
         ok("Moteur de recherche")
 
         step("3. Démarrage des services")
@@ -686,6 +820,7 @@ def supervise(cfg, services, windows_ocr):
 
 def stop_all(cfg, services):
     if not services:
+        write_info(running=False, stopped_at=now_iso())
         return
     print("\nArrêt en cours…", flush=True)
     by_name = {s.name: s for s in services}
@@ -699,6 +834,8 @@ def stop_all(cfg, services):
         wait_for(lambda: not any(w.alive() for w in workers), 30)
     for s in reversed(services):
         s.stop()
+    checkpoint_database()
+    write_info(running=False, stopped_at=now_iso())
     log_line("arrêté")
     ok("Tout est arrêté.")
 
@@ -767,11 +904,22 @@ def run_artisan(args):
     return subprocess.run([php_exe(), "artisan", *args.rest], cwd=BACKEND, env=php_env(cfg)).returncode
 
 
-def robocopy(source: Path, target: Path) -> bool:
-    # /E without /MIR: a photo is never deleted from the backup, even if it disappeared from the PC.
-    code = subprocess.run(["robocopy", str(source), str(target), "/E", "/R:2", "/W:2", "/NFL", "/NDL", "/NP", "/NJH", "/NJS"],
-                          capture_output=True).returncode
+def robocopy(source: Path, target: Path, mirror: bool = False) -> bool:
+    """Copies only what changed. Without mirror (/E), nothing is ever deleted from the target: a
+    photo stays in the backup even if it disappeared from the PC."""
+    code = subprocess.run(["robocopy", str(source), str(target), "/MIR" if mirror else "/E", "/R:2", "/W:2",
+                           "/NFL", "/NDL", "/NP", "/NJH", "/NJS"], capture_output=True).returncode
     return code < 8
+
+
+def pick_folder(given: str | None, description: str) -> Path | None:
+    if given:
+        return Path(given)
+    ps = ("Add-Type -AssemblyName System.Windows.Forms; $d = New-Object System.Windows.Forms.FolderBrowserDialog; "
+          f"$d.Description = '{description}'; $d.ShowNewFolderButton = $true; "
+          "if ($d.ShowDialog() -eq 'OK') { $d.SelectedPath }")
+    chosen = subprocess.run(["powershell", "-NoProfile", "-STA", "-Command", ps], capture_output=True, text=True).stdout.strip()
+    return Path(chosen) if chosen else None
 
 
 def backup(args):
@@ -779,15 +927,10 @@ def backup(args):
     cfg = prepared_cfg()
     if not launcher_running():
         raise Abort("Démarrer l'application (Demarrer.bat) avant de sauvegarder.")
-    destination = args.destination
+    destination = pick_folder(args.destination, "Choisir le disque USB (ou le dossier) de sauvegarde")
     if not destination:
-        ps = ("Add-Type -AssemblyName System.Windows.Forms; $d = New-Object System.Windows.Forms.FolderBrowserDialog; "
-              "$d.Description = 'Choisir le disque USB (ou le dossier) de sauvegarde'; "
-              "if ($d.ShowDialog() -eq 'OK') { $d.SelectedPath }")
-        destination = subprocess.run(["powershell", "-NoProfile", "-STA", "-Command", ps], capture_output=True, text=True).stdout.strip()
-        if not destination:
-            return 1
-    target = Path(destination) / "ArchiveInventory-Sauvegarde"
+        return 1
+    target = destination / "ArchiveInventory-Sauvegarde"
     step(f"Sauvegarde vers {target}")
     out = artisan(cfg, "archive:backup", capture=True, check=False)
     folder = next((l.strip() for l in reversed(out.stdout.splitlines()) if l.strip()[:4].isdigit()), None)
@@ -798,7 +941,7 @@ def backup(args):
         raise Abort("Copie de la base impossible (disque plein ou retiré ?)")
     ok("Base copiée")
     print("      photos (seules les nouvelles sont copiées)…", flush=True)
-    if not robocopy(ROOT / "storage", target / "photos"):
+    if not robocopy(PHOTOS, target / "photos"):
         raise Abort("Copie des photos impossible (disque plein ou retiré ?)")
     ok("Photos copiées")
     (target / "app-key.txt").write_text(cfg["APP_KEY"] + "\n", encoding="ascii")
@@ -818,9 +961,10 @@ def backup(args):
 
 
 def restore(args):
-    cfg = prepared_cfg()
     if launcher_running():
         raise Abort("Arrêter l'application (Arreter.bat) avant de restaurer.")
+    move_to_data_folder()
+    cfg = prepared_cfg()
     source = Path(args.source)
     bases = source / "base" if (source / "base").is_dir() else source
     dumps = [p for p in bases.iterdir() if (p / "database.sqlite.gz").exists()]
@@ -858,17 +1002,14 @@ def restore(args):
 
     step("3. Photos")
     if (source / "photos").is_dir():
-        if not robocopy(source / "photos", ROOT / "storage"):
+        if not robocopy(source / "photos", PHOTOS):
             raise Abort("Copie des photos impossible")
         ok("Photos recopiées")
     else:
         ok("Pas de photos dans cette sauvegarde : celles du PC sont gardées")
     key_file = source / "app-key.txt"
     if key_file.exists() and key_file.read_text(encoding="ascii").strip() != cfg["APP_KEY"]:
-        text = SETTINGS.read_text(encoding="utf-8-sig")
-        text = "\n".join(f"APP_KEY={key_file.read_text(encoding='ascii').strip()}" if l.startswith("APP_KEY=") else l
-                         for l in text.splitlines()) + "\n"
-        SETTINGS.write_text(text, encoding="utf-8")
+        write_keys(read_env_file(KEYS) | {"APP_KEY": key_file.read_text(encoding="ascii").strip()})
         ok("Clé de l'application reprise de la sauvegarde (codes PIN lisibles)")
 
     step("4. Index de recherche")
@@ -885,6 +1026,119 @@ def restore(args):
     finally:
         search.stop()
     ok("Restauration terminée : Demarrer.bat")
+    return 0
+
+
+def stop_for_copy() -> bool:
+    """Stops the application if it runs (a copy of a live database is not safe). True if it ran."""
+    if not launcher_running():
+        return False
+    print("L'application est arrêtée pendant la copie, puis redémarrée.", flush=True)
+    if stop(argparse.Namespace()) != 0 or not wait_for(lambda: not launcher_running(), 30):
+        raise Abort("Impossible d'arrêter l'application : fermer sa fenêtre puis recommencer.")
+    return True
+
+
+def start_in_new_window():
+    subprocess.Popen(["cmd", "/c", "start", "Inventaire des archives", str(ROOT / "Demarrer.bat")], cwd=ROOT)
+    ok("Application redémarrée dans une nouvelle fenêtre.")
+
+
+def copy_data_folder(source: Path, target: Path):
+    """Copies only what changed. INFO.json goes last and is removed first: a copy interrupted
+    halfway (drive pulled out) has none, and recevoir refuses it."""
+    (target / "INFO.json").unlink(missing_ok=True)
+    print("      base de données et index de recherche…", flush=True)
+    for sub in ("base", "recherche"):
+        if not robocopy(source / sub, target / sub, mirror=True):
+            raise Abort(f"Copie de {source / sub} impossible (disque plein ou retiré ?)")
+    print("      photos (seules les nouvelles sont copiées)…", flush=True)
+    if not robocopy(source / "photos", target / "photos"):
+        raise Abort("Copie des photos impossible (disque plein ou retiré ?)")
+    shutil.copy2(source / "cles.env", target / "cles.env")
+    shutil.copy2(source / "INFO.json", target / "INFO.json")
+
+
+def send(args):
+    """This PC → USB drive (or any folder): a copy of donnees\\ that recevoir, or a plain folder
+    copy, puts on the other PC."""
+    prepared_cfg()
+    if not DATABASE.exists():
+        raise Abort("Pas encore de données sur ce PC.")
+    destination = pick_folder(args.destination, "Choisir la clé USB (ou le dossier) où copier les données de ce PC")
+    if not destination:
+        return 1
+    target = destination / SYNC_FOLDER
+    was_running = stop_for_copy()
+    try:
+        step(f"Copie des données de ce PC vers {target}")
+        checkpoint_database()
+        write_info(running=False, stopped_at=last_use(read_info()) or now_iso())
+        copy_data_folder(DATA, target)
+        (target / "LISEZMOI.txt").write_text(
+            "Données de l'Inventaire des archives — CONFIDENTIEL.\n"
+            f"Copiées depuis le PC {pc_name()} le {now_iso().replace('T', ' à ')}.\n\n"
+            "Sur l'autre PC : Recevoir-donnees.bat, puis choisir ce dossier (ou la clé).\n"
+            "Ou à la main, application ARRÊTÉE : remplacer le dossier donnees de l'autre PC par ce dossier\n"
+            f"(renommé donnees).\n", encoding="utf-8")
+        ok(f"Terminé : {target}")
+    finally:
+        if was_running:
+            start_in_new_window()
+    print("\nRetirer la clé avec « Retirer le périphérique en toute sécurité », puis sur l'autre PC : Recevoir-donnees.bat")
+    return 0
+
+
+def receive(args):
+    """USB drive → this PC: replaces donnees\\ by the copy made on the other PC (envoyer)."""
+    source = pick_folder(args.source, "Choisir la clé USB (ou le dossier) contenant les données de l'autre PC")
+    if not source:
+        return 1
+    if (source / SYNC_FOLDER).is_dir():
+        source = source / SYNC_FOLDER
+    if source.resolve() == DATA.resolve():
+        raise Abort("C'est le dossier de données de ce PC lui-même.")
+    if not all((source / p).exists() for p in ("base/archive.sqlite", "cles.env", "INFO.json")):
+        raise Abort(f"{source} n'est pas une copie complète des données (copie interrompue ?) : refaire Envoyer-donnees.bat sur l'autre PC.")
+    incoming, local = read_info(source), read_info()
+    if incoming.get("running"):
+        raise Abort(f"Ces données ont été copiées pendant que l'application tournait sur {incoming.get('pc')} : "
+                    "l'y arrêter (Arreter.bat) puis refaire la copie.")
+    if version_key(incoming.get("version", "0")) > version_key(app_version()):
+        raise Abort(f"Ces données viennent d'une version plus récente ({incoming.get('version')}) : mettre ce PC à jour d'abord.")
+
+    step("Données reçues")
+    print(f"   de : PC {incoming.get('pc', '?')}, utilisées en dernier le {last_use(incoming).replace('T', ' à ')}")
+    if DATABASE.exists():
+        print(f"   remplacent celles de ce PC, utilisées en dernier le {last_use(local).replace('T', ' à ') or '?'}")
+        newer_here = last_use(local) > last_use(incoming) and local.get("pc") == pc_name()
+        if newer_here:
+            warn("CE PC A ÉTÉ UTILISÉ APRÈS l'autre : le travail fait ici depuis sera PERDU "
+                 "(une copie de sécurité de la base est gardée dans backups\\).")
+        if not args.yes and input("Taper REMPLACER pour confirmer : ").strip() != "REMPLACER":
+            return 1
+    was_running = stop_for_copy()
+    try:
+        move_to_data_folder()
+        if DATABASE.exists():
+            keep = ROOT / "backups" / f"avant-reception-{datetime.datetime.now():%Y-%m-%d_%H%M%S}"
+            keep.mkdir(parents=True)
+            checkpoint_database()
+            with open(DATABASE, "rb") as f, gzip.open(keep / "database.sqlite.gz", "wb", 6) as g:
+                shutil.copyfileobj(f, g)
+            for f in (KEYS, DATA_INFO):
+                if f.exists():
+                    shutil.copy2(f, keep / f.name)
+            ok(f"Copie de sécurité de la base de ce PC : {keep}")
+        step(f"Copie depuis {source}")
+        DATA.mkdir(exist_ok=True)
+        copy_data_folder(source, DATA)
+        ok("Données de ce PC remplacées")
+    finally:
+        if was_running:
+            start_in_new_window()
+    if not was_running:
+        print("\nDémarrer l'application : Demarrer.bat")
     return 0
 
 
@@ -924,13 +1178,19 @@ def main():
     p.add_argument("--yes", action="store_true")
     p = sub.add_parser("verifier")
     p.add_argument("--timeout", type=int, default=1800)
+    p = sub.add_parser("envoyer")
+    p.add_argument("destination", nargs="?")
+    p = sub.add_parser("recevoir")
+    p.add_argument("source", nargs="?")
+    p.add_argument("--yes", action="store_true")
     p = sub.add_parser("artisan")
     p.add_argument("rest", nargs=argparse.REMAINDER)
     args = parser.parse_args()
     if args.command is None:
         args = parser.parse_args(["demarrer", *sys.argv[1:]])
     handler = {"demarrer": start, "arreter": stop, "etat": status, "admin": admin, "sauvegarde": backup,
-               "restauration": restore, "verifier": verify, "artisan": run_artisan}[args.command]
+               "restauration": restore, "verifier": verify, "envoyer": send, "recevoir": receive,
+               "artisan": run_artisan}[args.command]
     try:
         return handler(args)
     except Abort as e:
