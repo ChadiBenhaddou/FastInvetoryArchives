@@ -130,8 +130,10 @@ def main():
     version = (REPO / "VERSION").read_text(encoding="utf-8").strip()
     out = args.out or REPO / "bundle" / "out" / f"ArchiveInventory-{version}-portable"
     step(f"Portable bundle {version} → {out}")
-    if out.exists():
-        shutil.rmtree(out)
+    # Emptied, not removed: a console window opened in the folder (Demarrer.bat tried from the
+    # bundle) keeps it in use, and Windows then refuses to delete the folder itself.
+    for leftover in (out.iterdir() if out.exists() else ()):
+        shutil.rmtree(leftover) if leftover.is_dir() else leftover.unlink()
     app, runtime = out / "app", out / "runtime"
     for d in (app, runtime, out / "prerequis"):
         d.mkdir(parents=True)
