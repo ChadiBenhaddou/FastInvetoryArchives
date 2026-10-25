@@ -4,13 +4,15 @@ namespace App\Services\Backup;
 
 use App\Models\Backup;
 use App\Models\Image;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Http;
 use RuntimeException;
 
 /**
  * Backup = one folder under ARCHIVE_ROOT/backups/<date>/:
- *   database.sql.gz   consistent dump of MySQL
+ *   database.sql.gz   consistent dump of MySQL (Docker)
+ *   database.sqlite.gz   or: copy of the SQLite database (portable Windows mode)
  *   search.dump       Meilisearch dump (the index can also be rebuilt from the database)
  *   photos.csv        every photo path + SHA-256, to verify a copy of the photos folder
  *   backup.json       what is inside, app version, counts
@@ -22,7 +24,10 @@ class BackupService
 {
     public const KEEP = 7;
 
-    public function __construct(private readonly MysqlDumper $dumper) {}
+    public function __construct(
+        private readonly MysqlDumper $mysql,
+        private readonly SqliteDumper $sqlite,
+    ) {}
 
     public function root(): string
     {
@@ -34,7 +39,9 @@ class BackupService
         $dir = $this->root().'/'.$backup->folder;
         File::ensureDirectoryExists($dir);
 
-        $tables = $this->dumper->dump("{$dir}/database.sql.gz");
+        $tables = DB::getDriverName() === 'sqlite'
+            ? $this->sqlite->dump("{$dir}/database.sqlite.gz")
+            : $this->mysql->dump("{$dir}/database.sql.gz");
         $search = $this->searchDump($dir);
         $photos = $this->photoList("{$dir}/photos.csv");
 

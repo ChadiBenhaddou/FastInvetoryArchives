@@ -15,8 +15,10 @@ class PaddleOcrEngine implements OcrService
 
     public function recognize(string $imagePath): array
     {
+        // The bytes, not an open handle: on Windows (portable mode) an open photo cannot be moved
+        // or deleted, and a handle held by the HTTP client outlives the request.
         $response = Http::timeout(config('archive.ocr.timeout'))
-            ->attach('image', fopen($imagePath, 'rb'), basename($imagePath))
+            ->attach('image', file_get_contents($imagePath), basename($imagePath))
             ->post(rtrim(config('archive.ocr.url'), '/').'/ocr');
 
         if ($response->failed()) {

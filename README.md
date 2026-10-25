@@ -93,6 +93,13 @@ dépassent 4 Go : FAT32 ne convient pas).
 
 ## 4. Installer le PC (Windows)
 
+Deux façons, au choix :
+
+- **avec Docker** (§ 4.1 à 4.4) : Docker Desktop, WSL et la virtualisation dans le BIOS ;
+- **sans Docker, mode portable** ([§ 4.5](#45-sans-docker--mode-portable)) : seul **Python** est installé, tout le
+  reste est un dossier à copier, démarré par **un seul double-clic**. Plus simple, et sans la licence de Docker
+  Desktop ([§ 14](#14-licences)).
+
 Compter environ une heure, dont la plupart en attente. Toutes les étapes se font **sans Internet**.
 
 ### 4.1 Pré-requis (une seule fois)
@@ -200,6 +207,45 @@ HTML (l'arabe s'y affiche de droite à gauche) :
 les pages lues avec une confiance faible restent signalées « à réviser ». Journal du service :
 `app\windows-ocr\logs\ocr-service.log`. Pour revenir à PaddleOCR : `OCR_ENGINE=paddle` dans `app\.env`, puis
 **Inventaire - Arrêter** / **Démarrer** ; pour retirer le service : `setup.ps1 -Uninstall`.
+
+### 4.5 Sans Docker : mode portable
+
+La même application, sans Docker ni WSL ni réglage du BIOS : les programmes (PHP, nginx, Meilisearch, les deux
+OCR) sont **déjà dans le dossier**, rien n'est installé sauf Python. La base de données est un fichier SQLite.
+Les données sont rangées comme avec Docker (`import\`, `storage\`, `backups\`… voir § 4.3).
+
+**Installation (une seule fois)** — clé USB `ArchiveInventory-<version>-portable` :
+
+1. Copier **tout le dossier** sur le PC, par exemple vers `C:\ArchiveInventory` (chemin **sans espace ni accent**).
+2. Installer `prerequis\python-3.12.10-amd64.exe` en cochant **Add python.exe to PATH**.
+3. Pour l'OCR Windows (§ 4.4) : mettre à jour l'Outil Capture d'écran depuis le Microsoft Store **avant** de couper
+   le réseau. Rien d'autre à faire : ses fichiers sont copiés automatiquement au premier démarrage.
+
+**Démarrer : double-clic sur `Demarrer.bat`.** C'est la seule commande : elle vérifie le PC, crée au premier
+lancement les paramètres, la base et le compte **admin** (le mot de passe est demandé dans la fenêtre), démarre
+tout, puis ouvre http://localhost dans le navigateur. **Laisser la fenêtre ouverte** (on peut la réduire) : la
+fermer arrête l'application. Un programme qui s'arrête est redémarré tout seul.
+
+| Fichier | |
+|---|---|
+| `Demarrer.bat` | démarre tout (et ouvre le navigateur si c'est déjà démarré) |
+| `Arreter.bat` | arrête tout proprement (les photos en cours de lecture sont terminées d'abord) |
+| `Sauvegarder.bat` | sauvegarde vers un disque USB (§ 10) |
+| `Restaurer.bat E:\ArchiveInventory-Sauvegarde` | restauration, application arrêtée (§ 10) |
+| `Verifier.bat` | vérification complète avec un export d'exemple (§ 6), application démarrée |
+| `parametres.env` | réglages (port, nombre de lectures en parallèle…), créé au premier démarrage |
+| `systeme\` | base de données, index de recherche, journaux (`systeme\journaux\`) — ne pas modifier |
+
+Pour démarrer avec la session Windows : clic droit sur `Demarrer.bat` → *Créer un raccourci*, puis déplacer le
+raccourci dans le dossier qui s'ouvre avec **Win+R** → `shell:startup`.
+
+**Différences avec Docker** : pas d'isolement réseau des programmes (ils n'écoutent que sur le PC lui-même,
+127.0.0.1, jamais sur le réseau local) ; pas de Tesseract (troisième OCR de secours) ; l'IA locale (§ 13) n'est pas
+disponible. Si le port 80 est déjà pris (par exemple par l'application Docker), mettre `HTTP_PORT=8080` dans `parametres.env`.
+
+**Mise à jour** : `Arreter.bat`, remplacer les dossiers `app\` et `runtime\` et les fichiers `.bat` par ceux de la
+nouvelle clé (ne pas toucher aux autres dossiers ni à `parametres.env`), puis `Demarrer.bat` (la base est mise à
+jour automatiquement). Faire une sauvegarde USB avant.
 
 ## 5. Installer le PC (Ubuntu)
 
@@ -368,6 +414,11 @@ Revenir en arrière (mauvaise sauvegarde choisie…) ou reprendre une sauvegarde
 `restore.ps1 -From C:\ArchiveInventory\backups -Backup <date>` (les photos du PC ne sont pas touchées).
 Ubuntu : `sudo bash /srv/archive/app/scripts/restore.sh /media/<disque>/ArchiveInventory-Sauvegarde`.
 
+**Mode portable** (§ 4.5) : `Sauvegarder.bat` fait la même sauvegarde (la base y est `database.sqlite.gz`) ;
+pour restaurer, `Arreter.bat` puis `Restaurer.bat E:\ArchiveInventory-Sauvegarde` (option `-Backup <date>`).
+La base actuelle est d'abord copiée dans `backups\avant-restauration-<date>\`. Les sauvegardes du mode Docker
+(MySQL) et du mode portable (SQLite) ne sont pas interchangeables.
+
 ## 11. Mise à jour
 
 Une nouvelle version arrive sur une nouvelle clé USB. Lancer son **`install.ps1`** (ou `update.ps1`) comme pour
@@ -484,6 +535,8 @@ Tous les autres composants sont libres et utilisables par une administration, sa
 | MySQL Community Server | GPL v2 |
 | Laravel, React, Tailwind CSS, Capacitor | MIT |
 | Docker Engine (Ubuntu) | Apache 2.0 |
+| Mode portable : PHP, nginx, SQLite | PHP License 3.01, BSD 2 clauses, domaine public |
+| Mode portable : environnement Visual C++ (`vcruntime140.dll`, `msvcp140.dll` à côté de PHP) | redistribuable Microsoft, copie à côté du programme autorisée |
 
 ---
 

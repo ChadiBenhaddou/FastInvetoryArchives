@@ -9,12 +9,14 @@ Pipeline:
      line decides which reading is kept (Arabic lines with digits get a word-level
      pass, see arabic.py);
   5. lines put in reading order (top → bottom; right → left on Arabic rows);
-  6. if PaddleOCR fails or finds nothing, Tesseract (ara+fra) is used instead.
+  6. if PaddleOCR fails or finds nothing, Tesseract (ara+fra) is used instead
+     (when installed: the portable Windows mode has no Tesseract).
 """
 
 import logging
 import os
 import re
+import shutil
 import subprocess
 import tempfile
 import threading
@@ -29,6 +31,7 @@ from .arabic import ARABIC_CHAR, read_arabic_line_with_digits
 from .config import CPU_THREADS, MAX_SIDE, MODELS, MODELS_DIR, TESSDATA_DIR
 
 log = logging.getLogger("ocr")
+TESSERACT = shutil.which(os.environ.get("TESSERACT_CMD", "tesseract"))
 LATIN_CHAR = re.compile(r"[A-Za-zÀ-ÖØ-öø-ÿŒœ]")
 DIGIT = re.compile(r"\d")
 
@@ -107,9 +110,11 @@ class OcrEngine:
             try:
                 result = self._paddle(img)
             except Exception:  # noqa: BLE001
+                if not TESSERACT:
+                    raise
                 log.exception("PaddleOCR failed, falling back to Tesseract")
                 result = None
-            if result is None or not result.text.strip():
+            if TESSERACT and (result is None or not result.text.strip()):
                 fallback = self._tesseract(img)
                 if fallback.text.strip() or result is None:
                     result = fallback
@@ -226,11 +231,13 @@ class OcrEngine:
         """Fallback engine: Tesseract 5 with the tessdata_best Arabic + French models."""
         result = OcrResult(engine="tesseract", height=img.shape[0], width=img.shape[1])
         gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-        with tempfile.NamedTemporaryFile(suffix=".png") as tmp:
-            cv2.imwrite(tmp.name, gray)
+        # A folder, not NamedTemporaryFile: on Windows an open temporary file cannot be reopened.
+        with tempfile.TemporaryDirectory() as tmp:
+            page = os.path.join(tmp, "page.png")
+            cv2.imwrite(page, gray)
             proc = subprocess.run(
                 # tsv output via -c: the "tsv" config file lives in the system tessdata dir, not ours.
-                ["tesseract", tmp.name, "-", "--tessdata-dir", TESSDATA_DIR, "-l", "ara+fra", "--psm", "3",
+                [TESSERACT, page, "-", "--tessdata-dir", TESSDATA_DIR, "-l", "ara+fra", "--psm", "3",
                  "-c", "tessedit_create_tsv=1"],
                 capture_output=True, text=True, timeout=120,
             )

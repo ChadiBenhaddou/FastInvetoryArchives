@@ -131,6 +131,43 @@ powershell -ExecutionPolicy Bypass -File bundle\out\ArchiveInventory-1.0.0\insta
 # puis : docker compose -p archive-test down -v ; supprimer D:\ArchiveInventoryTest et les raccourcis du bureau
 ```
 
+## Paquet portable Windows (sans Docker)
+
+Même application, sans conteneur : `portable/launcher.py` (Python, bibliothèque standard seulement) démarre et
+surveille tous les processus, que `docker-compose.yml` fait tourner dans les conteneurs :
+
+| Docker | Mode portable |
+|---|---|
+| `mysql` | fichier SQLite `systeme\base\archive.sqlite` (WAL, transactions `IMMEDIATE` — appliquées par Laravel seulement avec PHP ≥ 8.4, d'où PHP 8.4 dans ce mode) ; sauvegarde par `VACUUM INTO` (`SqliteDumper`) |
+| `meilisearch` | `runtime\meilisearch\meilisearch.exe` sur 127.0.0.1:7771 |
+| `app` (nginx + php-fpm), `gateway` | `runtime\nginx` sur 127.0.0.1:`HTTP_PORT` + `PHP_WORKERS` processus `php-cgi` (127.0.0.1:9171…) |
+| `queue`, `pipeline`, `scheduler` | `php artisan queue:work` / `schedule:work` (`runtime\php`) |
+| `ocr-worker` | `uvicorn` de `ocr-worker/app` sur 127.0.0.1:8771 (sans Tesseract) |
+| OCR Windows (tâche planifiée) | `windows-ocr/ocr_service.py` sur 127.0.0.1:8010, lancé par le lanceur |
+| `ollama`, `extractor` | absents (`LLM_ENABLED=false`) |
+
+Tous les processus sont dans un *job* Windows avec le lanceur : fermer sa fenêtre les arrête tous. Les réglages
+(`parametres.env`) sont passés en variables d'environnement, puis `php artisan optimize` à chaque démarrage.
+
+Construction, sur la machine connectée (Windows, Python 3.12 64 bits ; ni Docker ni Node ne sont nécessaires) :
+
+```powershell
+py -3.12 portable\build.py                   # ~2,5 Go avec PaddleOCR
+py -3.12 portable\build.py --without-paddle  # OCR Windows seulement
+```
+
+Résultat : `bundle/out/ArchiveInventory-<version>-portable/`. Les téléchargements (versions et SHA-256 fixés dans
+`build.py`) restent dans `bundle/out/cache/`. Les paquets Python sont installés par `pip install --target` dans
+`runtime\python` pour Python 3.12 x64 : le PC n'a besoin que de Python 3.12. L'APK est repris du paquet Docker
+s'il a été construit.
+
+Essai sur la machine de développement (port 8081 si l'application Docker tourne) :
+
+```powershell
+robocopy bundle\out\ArchiveInventory-1.0.0-portable D:\ArchiveInventoryPortable /E
+D:\ArchiveInventoryPortable\Demarrer.bat
+```
+
 ## Commandes utiles
 
 | Commande (`docker compose exec app php artisan …`) | Rôle |

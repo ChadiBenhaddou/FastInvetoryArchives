@@ -42,10 +42,12 @@ class DashboardController extends Controller
                 // Reminder when nothing was saved in the last 24 h (and there is something to save).
                 'reminder' => $hasData && (! $last || $last->finished_at->lt(now()->subDay())),
             ],
-            'database_bytes' => DB::getDriverName() === 'mysql'
-                ? (int) DB::table('information_schema.tables')->where('table_schema', DB::getDatabaseName())
-                    ->sum(DB::raw('data_length + index_length'))
-                : null,
+            'database_bytes' => match (DB::getDriverName()) {
+                'mysql' => (int) DB::table('information_schema.tables')->where('table_schema', DB::getDatabaseName())
+                    ->sum(DB::raw('data_length + index_length')),
+                'sqlite' => is_file(DB::getDatabaseName()) ? filesize(DB::getDatabaseName()) : null,
+                default => null,
+            },
         ]);
     }
 }
