@@ -38,14 +38,12 @@ Route::prefix('api')->group(function () {
         Route::get('imports/{import}', [ImportController::class, 'show'])->name('imports.show');
         Route::get('devices', [DeviceController::class, 'index'])->name('devices.index');
 
-        // Boxes, photos, review, search.
+        // Boxes, photos, corrections, search.
         Route::get('boxes', [BoxController::class, 'index']);
         Route::get('boxes/filters', [BoxController::class, 'filters']);
         Route::get('boxes/{box}', [BoxController::class, 'show']);
-        Route::post('boxes/{box}/approve', [BoxController::class, 'approve']);
         Route::get('images/{image}', [ImageController::class, 'show']);
         Route::get('images/{image}/thumb', [ImageController::class, 'thumb']);
-        Route::get('review/next', [ReviewController::class, 'next']);
         Route::put('documents/{document}', [ReviewController::class, 'updateDocument']);
         Route::get('search', SearchController::class);
 

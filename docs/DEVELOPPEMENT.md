@@ -44,9 +44,9 @@ sur une machine **connectée** à Internet. Le guide d'utilisation est le [READM
   `OcrService` (`FallbackOcrService` = `WindowsOneOcrEngine` puis `PaddleOcrEngine`) ; service arrêté (connexion
   refusée, 502) → PaddleOCR pendant 1 min ; photo refusée (422) → PaddleOCR pour cette photo seulement.
 - Pipeline d'une boîte : `ImportExportJob` → `RunOcrJob` par photo (OCR + champs par `RuleExtractor`, quelques ms)
-  → `IndexDocumentJob` → la boîte passe **à réviser** quand toutes ses photos sont indexées (~0,8 s par photo,
+  → `IndexDocumentJob` → la boîte passe **terminée** (pas de validation humaine) quand toutes ses photos sont indexées (~0,8 s par photo,
   3 workers `pipeline`, file `index` prioritaire sur `ocr`). Avec `LLM_ENABLED=true` : `RunOcrJob` →
-  `IndexDocumentJob` (cherchable tout de suite) + `ExtractMetadataJob` (IA, minutes) → réindexation → à réviser.
+  `IndexDocumentJob` (cherchable tout de suite) + `ExtractMetadataJob` (IA, minutes) → réindexation → terminée.
 
 ## Démarrage (machine de développement)
 

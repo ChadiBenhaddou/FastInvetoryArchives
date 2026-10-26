@@ -4,7 +4,7 @@ import { Minus, Plus, RotateCw, X } from 'lucide-react';
 export const BOX_STATUS = {
     imported: { label: 'Importée', className: 'bg-stone-100 text-stone-700' },
     processing: { label: 'En traitement', className: 'bg-sky-100 text-sky-800' },
-    review: { label: 'À réviser', className: 'bg-amber-100 text-amber-800' },
+    review: { label: 'À réviser', className: 'bg-amber-100 text-amber-800' }, // older versions only
     done: { label: 'Terminée', className: 'bg-green-100 text-green-800' },
 };
 

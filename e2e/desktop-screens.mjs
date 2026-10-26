@@ -1,5 +1,5 @@
 // Desktop admin screens, end to end against the running stack (deliverable 6):
-// dashboard → boxes → box detail → review (keyboard) → search (AR/FR) → export → PIN → backup → conflicts.
+// dashboard → boxes → box detail → correction → search (AR/FR) → export → PIN → backup → conflicts.
 // Usage: scripts/e2e-desktop.(ps1|sh) -Script desktop-screens.mjs
 import { chromium } from 'playwright';
 
@@ -48,17 +48,13 @@ const title = await page.getByLabel('Titre / objet').inputValue().catch(() => ''
 console.log(`  first document title: ${title || '(vide)'}`);
 await shot('box-detail');
 
-step('review screen with keyboard');
-await nav('Révision');
-await page.getByText('Code enregistré').waitFor({ timeout: 30000 });
-const before = await page.locator('text=/Document \\d+ \\/ \\d+/').innerText();
-await page.keyboard.press('Control+Enter');
-await page.waitForFunction((b) => {
-    const t = document.body.innerText;
-    return !t.includes(b) || /terminée|validée|Aucune boîte/.test(t);
-}, before, { timeout: 30000 });
-console.log(`  ${before} → approved with Ctrl+Entrée`);
-await shot('review');
+step('correction from the box page (no validation step)');
+await page.getByLabel('Titre / objet').fill(`${title || 'Document'} (corrigé)`);
+await page.getByRole('button', { name: 'Enregistrer la correction' }).click();
+await page.getByText('Correction enregistrée.').waitFor({ timeout: 15000 });
+await page.getByText(/Corrigé par/).waitFor({ timeout: 15000 });
+console.log('  correction saved, document no longer flagged');
+await shot('correction');
 
 step('search (Arabic, with highlight)');
 await nav('Recherche');

@@ -8,7 +8,6 @@ use App\Models\Box;
 use App\Models\BoxConflict;
 use App\Models\Device;
 use App\Services\BoxCodeCorrector;
-use App\Services\Review;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -67,14 +66,6 @@ class BoxController extends Controller
         $box->pending_conflicts = BoxConflict::where('existing_box_id', $box->id)->where('status', 'pending')->count();
 
         return new BoxResource($box);
-    }
-
-    /** Approves every document of the box as it is and closes the review of the box. */
-    public function approve(Request $request, Box $box, Review $review): BoxResource
-    {
-        $review->approveBox($box, $request->user());
-
-        return $this->show($box->fresh());
     }
 
     /** Admin: fix a code that was miswritten on the box (audited, photos moved, index updated). */

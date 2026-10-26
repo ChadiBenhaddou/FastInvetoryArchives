@@ -22,7 +22,7 @@ use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
-/** Import → OCR → LLM extraction → search indexing → box "to review". All services faked over HTTP. */
+/** Import → OCR → LLM extraction → search indexing → box "done". All services faked over HTTP. */
 class PipelineTest extends TestCase
 {
     use RefreshDatabase;
@@ -100,14 +100,14 @@ class PipelineTest extends TestCase
         $this->assertSame(BoxStatus::Processing, $box->fresh()->status);
     }
 
-    public function test_full_chain_ocr_extraction_indexing_then_review(): void
+    public function test_full_chain_ocr_extraction_indexing_then_done(): void
     {
         $this->fakeServices();
         $box = $this->box(documents: 2);
 
         BoxImported::dispatch($box->id); // sync queue in tests: every step runs right away
 
-        $this->assertSame(BoxStatus::Review, $box->fresh()->status);
+        $this->assertSame(BoxStatus::Done, $box->fresh()->status);
         $this->assertSame(2, Document::count());
         $doc = Document::firstOrFail();
         // OCR
@@ -154,7 +154,7 @@ class PipelineTest extends TestCase
         $this->assertSame('done', $doc->index_status);
         Http::assertSent(fn ($r) => str_contains($r->url(), 'search.test/indexes/documents/documents')
             && str_contains($r->data()[0]['ocr_text'], 'وزارة'));
-        // ...but the box waits for the extraction before going to review.
+        // ...but the box waits for the extraction before being done.
         $this->assertSame(BoxStatus::Processing, $box->fresh()->status);
     }
 
@@ -166,7 +166,7 @@ class PipelineTest extends TestCase
 
         BoxImported::dispatch($box->id);
 
-        $this->assertSame(BoxStatus::Review, $box->fresh()->status);
+        $this->assertSame(BoxStatus::Done, $box->fresh()->status);
         $doc = Document::firstOrFail();
         $this->assertSame('done', $doc->extraction_status);
         $this->assertSame('rules', $doc->extraction_model);
@@ -193,7 +193,7 @@ class PipelineTest extends TestCase
         $this->artisan('archive:reprocess', ['codes' => [$box->code], '--extraction' => true])->assertSuccessful();
 
         $this->assertSame('rules', Document::firstOrFail()->extraction_model);
-        $this->assertSame(BoxStatus::Review, $box->fresh()->status);
+        $this->assertSame(BoxStatus::Done, $box->fresh()->status);
         // The LLM was only called by the first pass; the rerun re-indexes with the rule fields.
         $this->assertSame(1, Http::recorded(fn ($r) => str_contains($r->url(), 'llm.test'))->count());
     }
@@ -208,7 +208,7 @@ class PipelineTest extends TestCase
         $doc = Document::firstOrFail();
         $this->assertTrue($doc->needs_review);
         $this->assertSame(['low_extraction_confidence'], $doc->review_reasons);
-        $this->assertSame(BoxStatus::Review, $box->fresh()->status);
+        $this->assertSame(BoxStatus::Done, $box->fresh()->status);
     }
 
     public function test_invalid_llm_answers_flag_the_document_but_finish_the_box(): void
@@ -226,7 +226,7 @@ class PipelineTest extends TestCase
         $this->assertSame('failed', $doc->extraction_status);
         $this->assertSame(['extraction_failed'], $doc->review_reasons);
         $this->assertSame('done', $doc->index_status, 'still searchable by its OCR text');
-        $this->assertSame(BoxStatus::Review, $box->fresh()->status);
+        $this->assertSame(BoxStatus::Done, $box->fresh()->status);
     }
 
     public function test_pages_without_text_skip_extraction(): void
@@ -240,7 +240,7 @@ class PipelineTest extends TestCase
         $this->assertSame('skipped', $doc->extraction_status);
         $this->assertSame(['no_text'], $doc->review_reasons);
         Http::assertNotSent(fn ($r) => str_contains($r->url(), 'llm.test'));
-        $this->assertSame(BoxStatus::Review, $box->fresh()->status);
+        $this->assertSame(BoxStatus::Done, $box->fresh()->status);
     }
 
     public function test_low_ocr_confidence_and_handwriting_need_review(): void
@@ -282,7 +282,7 @@ class PipelineTest extends TestCase
         $this->assertTrue($doc->needs_review);
         $this->assertSame(['ocr_failed'], $doc->review_reasons);
         $this->assertSame('skipped', $doc->extraction_status);
-        $this->assertSame(BoxStatus::Review, $box->fresh()->status);
+        $this->assertSame(BoxStatus::Done, $box->fresh()->status);
     }
 
     public function test_search_engine_outage_does_not_block_the_box(): void
@@ -303,7 +303,7 @@ class PipelineTest extends TestCase
         }
 
         $this->assertSame('failed', $doc->fresh()->index_status);
-        $this->assertSame(BoxStatus::Review, $box->fresh()->status);
+        $this->assertSame(BoxStatus::Done, $box->fresh()->status);
     }
 
     public function test_done_images_are_skipped_unless_forced(): void

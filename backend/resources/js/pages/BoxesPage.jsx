@@ -77,7 +77,7 @@ export default function BoxesPage() {
                         <th className="px-3 py-2 font-medium">Emplacement</th>
                         <th className="px-3 py-2 font-medium">Agent · appareil</th>
                         <th className="px-3 py-2 font-medium">Photos</th>
-                        <th className="px-3 py-2 font-medium">À réviser</th>
+                        <th className="px-3 py-2 font-medium">Signalés</th>
                         <th className="px-3 py-2 font-medium">Créée le</th>
                     </tr>
                 </thead>

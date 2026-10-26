@@ -2,7 +2,7 @@
 
 Application **100 % hors ligne** pour inventorier des archives en arabe et en français :
 des téléphones Android photographient les dossiers de chaque boîte, un PC sans Internet lit les photos (OCR),
-en extrait les informations utiles avec une IA locale et permet de réviser, chercher et exporter l'inventaire.
+en extrait les informations utiles avec une IA locale et permet de chercher, corriger et exporter l'inventaire.
 
 > **Aucune donnée ne quitte le PC.** Ni le PC ni les téléphones n'ont besoin d'Internet, à aucun moment :
 > pas de compte, pas de nuage, pas de mise à jour automatique, pas de statistiques envoyées.
@@ -37,7 +37,7 @@ Sommaire
   2. Photo du code écrit                               6. Lecture automatique (OCR arabe + français)
   3. Photo de la couverture de chaque dossier          7. Extraction des champs (règles, ou IA locale
      (contrôle de netteté et de lumière immédiat)         en option) : type, date, référence, titre…
-  4. « Exporter » : UN fichier ZIP par session ──câble USB──▶ 8. Révision par une personne
+  4. « Exporter » : UN fichier ZIP par session ──câble USB──▶ 8. Boîte « Terminée », sans validation à faire
                                                        9. Recherche, inventaire Excel, sauvegarde
 ```
 
@@ -45,9 +45,10 @@ Sommaire
   la lettre identifie le téléphone, le numéro est donné par le téléphone, la dernière lettre est une
   **lettre de contrôle** qui détecte les erreurs de recopie (un chiffre faux, deux chiffres inversés,
   une mauvaise lettre d'appareil). Les lettres O, I, S, B et Z ne sont jamais utilisées (trop proches de 0, 1, 5, 8, 2).
-- Le PC compare le code **photographié** sur la boîte au code **enregistré** : la personne qui révise voit
-  les deux côte à côte.
-- Un document est **cherchable et prêt à réviser moins d'une seconde après sa lecture** : ses champs (type, date,
+- La page de chaque boîte montre la **photo du code écrit** sur la boîte à côté du code **enregistré** : en cas
+  d'erreur de recopie, un administrateur corrige le code.
+- Un document est **cherchable moins d'une seconde après sa lecture**, et la boîte **Terminée** dès que ses photos
+  sont lues : il n'y a pas d'étape de validation par une personne. Ses champs (type, date,
   référence, titre…) sont trouvés par des règles. L'IA, plus lente, peut être activée en option ([§ 13](#13-réglages-avancés)).
 
 ## 2. Matériel nécessaire
@@ -67,14 +68,14 @@ Le PC est prévu pour ne faire que ce travail. Ordres de grandeur mesurés sur u
 | Étape | Vitesse | Par jour (24 h) |
 |---|---|---|
 | Import (vérification + copie) | quelques secondes par boîte | — |
-| Lecture (OCR Windows, [§ 4.4](#44-ocr-windows-fortement-conseillé)) + champs par règles + indexation | **~0,8 s par photo**, de l'import à « À réviser » (3 photos en parallèle, PC sans autre travail) | ~100 000 photos |
+| Lecture (OCR Windows, [§ 4.4](#44-ocr-windows-fortement-conseillé)) + champs par règles + indexation | **~0,8 s par photo**, de l'import à « Terminée » (3 photos en parallèle, PC sans autre travail) | ~100 000 photos |
 | Même chose avec PaddleOCR (OCR Windows absent, ou Ubuntu) | ~6 à 15 s par photo (2 en parallèle) | ~10 000 photos |
 | Extraction par l'IA, si elle est activée (`LLM_ENABLED=true`, [§ 13](#13-réglages-avancés)) | ~1 à 2,5 min par document | ~700 à 1 300 documents |
 
 Par défaut l'IA est **désactivée** : le type de document, la date, la référence, le titre, les organismes et
 les personnes sont trouvés par des règles (français et arabe) en quelques millisecondes, et chaque boîte passe
-« À réviser » dès que ses photos sont lues. Les valeurs sont toujours prises dans le texte lui-même ; ce qui
-n'est pas trouvé reste vide pour la personne qui révise. La vitesse dépend du PC : des programmes ouverts
+« Terminée » dès que ses photos sont lues. Les valeurs sont toujours prises dans le texte lui-même ; ce qui
+n'est pas trouvé reste vide (et peut être complété depuis la page de la boîte). La vitesse dépend du PC : des programmes ouverts
 (navigateurs, éditeurs…) la divisent facilement par deux.
 
 ## 3. Contenu de la clé USB
@@ -204,7 +205,7 @@ HTML (l'arabe s'y affiche de droite à gauche) :
 `C:\ArchiveInventory\app\windows-ocr\venv\Scripts\python.exe -X utf8 C:\ArchiveInventory\app\windows-ocr\compare.py C:\ArchiveInventory\storage\A-0123-N --html comparaison.html`
 
 **Au quotidien** : rien à faire. Le moteur utilisé est inscrit pour chaque page (`windows-oneocr` ou `paddle`) ;
-les pages lues avec une confiance faible restent signalées « à réviser ». Journal du service :
+les pages lues avec une confiance faible sont signalées. Journal du service :
 `app\windows-ocr\logs\ocr-service.log`. Pour revenir à PaddleOCR : `OCR_ENGINE=paddle` dans `app\.env`, puis
 **Inventaire - Arrêter** / **Démarrer** ; pour retirer le service : `setup.ps1 -Uninstall`.
 
@@ -372,23 +373,21 @@ Une seule boîte est ouverte à la fois. Pour abandonner une boîte (code mal é
 Tant que l'étape 5 n'est pas faite, le téléphone garde tout : en cas de problème on peut **Ré-exporter**.
 Importer deux fois le même fichier est sans danger (« Déjà importé », rien n'est modifié).
 
-### 8.3 Au bureau : révision
+### 8.3 Au bureau : rien à valider
 
-Après l'import, chaque boîte passe par **En traitement** puis **À réviser** ; le **Tableau de bord** montre
-l'avancement et le temps restant estimé.
+Après l'import, chaque boîte passe par **En traitement** puis **Terminée**, toute seule, dès que ses photos sont
+lues : **il n'y a pas d'étape de validation** document par document. Le **Tableau de bord** montre l'avancement
+et le temps restant estimé.
 
-Page **Révision** (une boîte après l'autre) :
+Les documents qui posent problème restent **signalés**, pour information : *Lecture (OCR) peu sûre*, *Manuscrit
+probable*, *Aucun texte détecté*, *Extraction peu sûre*… Leur nombre est sur le tableau de bord, dans la liste
+des boîtes (colonne *Signalés*), dans la recherche et dans l'inventaire Excel (colonnes *Signalé* et *Motifs*).
 
-1. **Vérifier le code** : la photo du code écrit est à côté du code enregistré. S'ils diffèrent, un administrateur
-   corrige le code de la boîte (les photos suivent, tout est tracé dans le journal).
-2. Pour chaque document : la photo à gauche, le texte lu et les champs extraits à droite (type, date, référence,
-   titre, personnes, organismes, mots-clés). Corriger si besoin.
-   Les documents à regarder en priorité sont signalés : *Lecture (OCR) peu sûre*, *Manuscrit probable*,
-   *Aucun texte détecté*, *Extraction peu sûre*…
-3. **Valider et suivant**. Raccourcis clavier : `Ctrl+Entrée` valider et suivant, `Ctrl+S` enregistrer,
-   `Alt+←` / `Alt+→` document précédent / suivant.
-
-Quand tous ses documents sont validés, la boîte passe à **Terminée**.
+**Corriger, quand on le souhaite** : page **Boîtes** → la boîte → cliquer sur un document. La photo est à gauche,
+le texte lu et les champs à droite (type, date, référence, titre, personnes, organismes, mots-clés) ; modifier puis
+**Enregistrer la correction**. La correction est tracée (qui, quand, avant / après), la recherche est mise à jour
+et le document n'est plus signalé. Sur la même page, la photo du code écrit est à côté du code enregistré : s'ils
+diffèrent, un administrateur corrige le code de la boîte (les photos suivent, tout est tracé dans le journal).
 
 ### 8.4 Recherche et inventaire
 
@@ -410,7 +409,7 @@ Page **Utilisateurs** (administrateur) : créer un compte par personne.
 
 | Rôle | Peut |
 |---|---|
-| **Réviseur** | importer, réviser, chercher, consulter |
+| **Réviseur** | importer, chercher, consulter, corriger les documents |
 | **Administrateur** | tout, plus : appareils et codes PIN, utilisateurs, correction de codes de boîte, conflits, export Excel, sauvegardes |
 
 Un compte peut être **désactivé** (jamais supprimé, pour garder le journal). Toutes les modifications sont
@@ -507,7 +506,7 @@ Les réglages sont dans `C:\ArchiveInventory\app\.env` (à modifier avec le Bloc
 **L'IA est désactivée par défaut** (`LLM_ENABLED=false` dans `.env`) : sur processeur seul elle prend 1 à
 2,5 minutes par document, contre moins d'une seconde pour tout le reste. Les champs sont alors trouvés par des
 règles. L'activer (`LLM_ENABLED=true`, puis **Inventaire - Arrêter** / **Démarrer**) donne de meilleurs titres,
-des mots-clés et un résumé, mais chaque boîte attend alors l'IA avant de passer « À réviser ». Pour réextraire
+des mots-clés et un résumé, mais chaque boîte attend alors l'IA avant de passer « Terminée ». Pour réextraire
 avec le réglage choisi les documents déjà traités : `docker compose exec app php artisan archive:reprocess --all --extraction --wait`.
 
 Deux modèles sont fournis, tous deux sous licence libre autorisant l'usage professionnel :
@@ -521,8 +520,7 @@ Deux modèles sont fournis, tous deux sous licence libre autorisant l'usage prof
 
 Quel que soit le modèle, l'IA est contrainte par un schéma (elle ne peut répondre qu'au format attendu, avec
 un type de document pris dans la liste), et **toute valeur absente du texte du document est écartée** —
-le modèle ne peut pas « inventer » une date, une référence ou un nom. Les documents incertains sont signalés
-pour la révision.
+le modèle ne peut pas « inventer » une date, une référence ou un nom. Les documents incertains sont signalés.
 
 Mesurer la vitesse réelle sur le PC (sur les derniers documents importés, rien n'est modifié) :
 

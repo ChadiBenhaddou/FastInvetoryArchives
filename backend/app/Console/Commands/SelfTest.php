@@ -96,14 +96,14 @@ class SelfTest extends Command
             $started = microtime(true);
             $deadline = time() + (int) $this->option('timeout');
             $boxes = Box::whereIn('code', $codes);
-            while (time() < $deadline && (clone $boxes)->where('status', '!=', BoxStatus::Review)->exists()) {
+            while (time() < $deadline && (clone $boxes)->where('status', '!=', BoxStatus::Done)->exists()) {
                 usleep(500_000);
                 $this->output->write('.');
             }
             $this->newLine();
             $seconds = microtime(true) - $started;
             $this->check(sprintf('Boîtes traitées en %.1f s (%.1f s par photo)', $seconds, $seconds / max(1, $import->photo_count)),
-                fn () => ! (clone $boxes)->where('status', '!=', BoxStatus::Review)->exists() ?: throw new \RuntimeException('délai dépassé'));
+                fn () => ! (clone $boxes)->where('status', '!=', BoxStatus::Done)->exists() ?: throw new \RuntimeException('délai dépassé'));
 
             $docs = Document::whereIn('box_id', (clone $boxes)->pluck('id'))->get();
             $this->check('Texte lu par l\'OCR ('.$docs->pluck('ocr_engine')->unique()->implode(', ').')', fn () => $docs->every(fn ($d) => trim((string) $d->ocr_text) !== '') ?: throw new \RuntimeException('page sans texte'));

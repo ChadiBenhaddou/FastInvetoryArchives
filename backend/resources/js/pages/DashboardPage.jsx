@@ -7,7 +7,7 @@ import { useAuth } from '../auth/AuthContext';
 import AgentChart from '../components/AgentChart';
 
 const SERVICE_LABELS = {
-    database: 'Base de données (MySQL)',
+    database: 'Base de données',
     search: 'Moteur de recherche (Meilisearch)',
     ocr: 'OCR',
     llm: 'IA locale (Ollama)',
@@ -103,13 +103,12 @@ export default function DashboardPage() {
                         <ul className="space-y-1 text-sm">
                             <li>Importées : <strong>{pipeline.boxes.imported}</strong></li>
                             <li>En traitement : <strong>{pipeline.boxes.processing}</strong></li>
-                            <li>À réviser : <strong>{pipeline.boxes.review}</strong></li>
                             <li>Terminées : <strong>{pipeline.boxes.done}</strong></li>
                         </ul>
                     </Card>
-                    <Card title="Révision">
+                    <Card title="Documents signalés">
                         <p className="text-3xl font-semibold">{pipeline.needs_review}</p>
-                        <p className="text-sm text-stone-500">document(s) signalé(s) pour vérification humaine</p>
+                        <p className="text-sm text-stone-500">lecture peu sûre, manuscrit, sans texte… (pour information, à corriger depuis la boîte si besoin)</p>
                     </Card>
                 </div>
             )}
