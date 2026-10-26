@@ -7,7 +7,8 @@ sur une machine **connectée** à Internet. Le guide d'utilisation est le [READM
 
 | Dossier | Contenu |
 |---|---|
-| `backend/` | Laravel 13 (PHP 8.3) + interface d'administration React/Vite/Tailwind (`resources/js`) |
+| `backend/` | Laravel 13 (PHP 8.3 dans Docker, 8.4 en mode portable) + interface d'administration React/Vite/Tailwind (`resources/js`) |
+| `portable/` | Mode portable Windows sans Docker : lanceur (`launcher.py`), construction du paquet (`build.py`), fichiers `.bat` |
 | `docker/` | Image applicative (nginx + php-fpm, file d'attente, planificateur, passerelle) |
 | `ocr-worker/` | Service OCR Python : PaddleOCR PP-OCRv5 (arabe + latin) et Tesseract 5 (`ara+fra`) |
 | `windows-ocr/` | OCR Windows (moteur de l'Outil Capture d'écran via `oneocr`), service natif sur 127.0.0.1:8010, joint par la passerelle ; `OCR_ENGINE=windows` (défaut) avec PaddleOCR en secours. Tests : `py -3.12 -m unittest discover -s tests -t .` dans ce dossier |
@@ -24,7 +25,7 @@ sur une machine **connectée** à Internet. Le guide d'utilisation est le [READM
                                                          │
   127.0.0.1:80 ─▶ gateway (nginx seul) ─┬─▶ app (Laravel + React)        réseau Docker « internal » :
                                         │   queue      (imports)         aucune route vers l'extérieur
-                                        │   pipeline×2 (OCR, index)
+                                        │   pipeline×3 (OCR, index)
                                         │   extractor  (IA)
                                         │   scheduler  (dossier surveillé, sauvegarde 2 h)
                                         ├─▶ mysql 8.4
@@ -62,7 +63,7 @@ Puis ouvrir http://localhost.
 ## Tests
 
 ```powershell
-# Backend (88 tests)
+# Backend (124 tests)
 docker build -f docker/app/Dockerfile --target test -t archive-inventory/app:test .
 docker run --rm archive-inventory/app:test
 
@@ -168,12 +169,32 @@ Résultat : `bundle/out/ArchiveInventory-<version>-portable/`. Les téléchargem
 `runtime\python` pour Python 3.12 x64 : le PC n'a besoin que de Python 3.12. L'APK est repris du paquet Docker
 s'il a été construit.
 
-Essai sur la machine de développement (port 8081 si l'application Docker tourne) :
+Essai sur la machine de développement (`HTTP_PORT=8081` dans `parametres.env` si l'application Docker tourne ;
+une seule instance du mode portable à la fois : ses ports internes sont fixes) :
 
 ```powershell
 robocopy bundle\out\ArchiveInventory-1.0.0-portable D:\ArchiveInventoryPortable /E
 D:\ArchiveInventoryPortable\Demarrer.bat
 ```
+
+Ne pas lancer `Demarrer.bat` dans `bundle\out\…-portable` lui-même : les données y seraient créées, et la
+construction suivante les efface.
+
+Tests sans Docker (Windows), avec le PHP 8.4 et le Node du paquet portable :
+
+```bash
+# Backend : copie de backend/ + shared/ (vendor de développement), base SQLite en mémoire
+P=bundle/out/ArchiveInventory-1.0.0-portable/runtime/php
+cd <copie>/backend && $P/php.exe <cache>/composer.phar install && : > .env && $P/php.exe artisan test
+
+# Écrans du PC contre une installation portable démarrée (Playwright installé dans e2e/)
+export PATH="$PWD/bundle/out/cache/node-v22:$PATH"
+cd e2e && npm install && npx playwright install chromium
+APP_URL=http://localhost ADMIN_USER=admin ADMIN_PASSWORD=<...> OUT_DIR=<dossier> node desktop-screens.mjs
+```
+
+L'installation de test doit contenir l'appareil **K** et l'export `samples/K_20261022_1800_3boxes_exemple.zip`
+importé. `APP_URL=http://<adresse du PC>` teste l'accès par le réseau local (`PC_AUTORISES`).
 
 ## Commandes utiles
 
