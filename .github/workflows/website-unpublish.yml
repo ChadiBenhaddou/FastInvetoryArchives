@@ -1,0 +1,48 @@
+# One click (Actions → website-unpublish → Run workflow, or the dashboard): an article goes back to
+# draft and disappears at the next Cloudflare Pages deployment. Its file stays, editable.
+name: website-unpublish
+
+on:
+  workflow_dispatch:
+    inputs:
+      slug:
+        description: "Slug de l'article (ex. ocr-documents-arabes-possibilites-limites)"
+        required: true
+        type: string
+      reason:
+        description: 'Raison (journal)'
+        required: false
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  unpublish:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: website
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: website/.nvmrc
+          cache: npm
+          cache-dependency-path: website/package-lock.json
+      - run: npm ci
+      - name: Back to draft
+        env:
+          SLUG: ${{ inputs.slug }}
+          REASON: ${{ inputs.reason }}
+        run: |
+          case "$SLUG" in *[!a-z0-9-]*|'') echo "slug invalide"; exit 1;; esac
+          node scripts/seo/unpublish.mjs "$SLUG" "${REASON:-retrait manuel}"
+      - name: Commit
+        env:
+          SLUG: ${{ inputs.slug }}
+        run: |
+          git config user.name "seo-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/content/blog research
+          git diff --cached --quiet || { git commit -m "Article retiré : $SLUG"; git push; }

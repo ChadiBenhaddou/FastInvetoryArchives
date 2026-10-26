@@ -1,0 +1,35 @@
+---
+import Page from '../../layouts/Page.astro';
+import { SOLUTION_PAGES } from '../../config/nav.mjs';
+---
+
+<Page
+    title="Outil d'inventaire pour services d'archives et archivistes"
+    h1="Services d’archives et archivistes"
+    description="Un outil qui accélère l'inventaire et le récolement des boîtes d'archives sans remplacer l'archiviste : photos, lecture automatique, recherche, export."
+    lead="Le logiciel ne remplace ni le plan de classement ni le tableau de gestion : il accélère la partie la plus longue, décrire boîte par boîte ce qui est réellement sur les étagères."
+    breadcrumbs={[{ name: 'Accueil', href: '/' }, { name: 'Solutions', href: '/solutions/' }, { name: "Services d'archives", href: '/solutions/services-archives/' }]}
+    offer="inventaire"
+    siblings={SOLUTION_PAGES}
+    siblingsTitle="Solutions"
+>
+    <h2>Là où il aide</h2>
+    <ul>
+        <li><strong>Récolement et inventaire de fonds non décrits</strong> : chaque boîte reçoit un code, chaque dossier une photo et une description automatique.</li>
+        <li><strong>Localisation</strong> : salle, étagère, rangée enregistrées à la capture.</li>
+        <li><strong>Recherche</strong> dans le texte de couverture des dossiers, en arabe et en français, pendant que la description archivistique se poursuit.</li>
+        <li><strong>Export</strong> Excel et CSV, pour reprendre les données dans votre outil de description.</li>
+    </ul>
+
+    <h2>Ce qu’il ne fait pas</h2>
+    <ul>
+        <li>Il ne décide ni du classement, ni des durées de conservation, ni du sort final des documents : ces décisions restent celles de l’archiviste et des textes applicables.</li>
+        <li>Il ne lit pas de façon fiable les documents manuscrits : ils sont signalés.</li>
+        <li>Il photographie la couverture ou la première page de chaque dossier, pas chaque page : ce n’est pas un outil de numérisation intégrale.</li>
+    </ul>
+    <p>
+        Besoin d’adapter l’inventaire à votre plan de classement ou à votre tableau de gestion ? C’est un projet
+        <a href="/applications-sur-mesure/outils-gestion-documentaire/">sur mesure</a>.
+        À lire : <a href="/blog/inventorier-archives-sans-internet/">inventorier des archives sans Internet</a>.
+    </p>
+</Page>

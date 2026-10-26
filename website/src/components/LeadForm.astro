@@ -1,0 +1,133 @@
+---
+// Lead form → POST /api/lead (Pages Function: server-side validation, Turnstile, honeypot, rate limit).
+// Works without JavaScript (303 redirect to /merci/); with JavaScript, shows the result in place.
+import { site } from '../config/site.mjs';
+
+interface Props { type?: 'demonstration' | 'devis' | 'sur-mesure' }
+const { type = 'demonstration' } = Astro.props;
+const field = 'mt-1 w-full rounded-md border border-stone-300 bg-white px-3 py-2 text-ink focus:border-brand-600 focus:outline-none';
+const label = 'block text-sm font-medium text-ink';
+---
+
+<form id="lead-form" method="post" action="/api/lead" class="space-y-5 rounded-2xl border border-stone-200 bg-white p-6 sm:p-8" novalidate>
+    <fieldset>
+        <legend class={label}>Votre demande</legend>
+        <div class="mt-2 grid gap-2 sm:grid-cols-3">
+            {[['demonstration', 'Démonstration du logiciel'], ['devis', 'Devis ou pilote'], ['sur-mesure', 'Projet sur mesure']].map(([value, text]) => (
+                <label class="flex cursor-pointer items-center gap-2 rounded-md border border-stone-300 px-3 py-2 text-sm has-[:checked]:border-brand-600 has-[:checked]:bg-brand-50">
+                    <input type="radio" name="type" value={value} checked={value === type} class="accent-brand-600" required /> {text}
+                </label>
+            ))}
+        </div>
+    </fieldset>
+
+    <div class="grid gap-5 sm:grid-cols-2">
+        <div><label for="nom" class={label}>Nom et prénom *</label><input id="nom" name="nom" required maxlength="120" autocomplete="name" class={field} /></div>
+        <div><label for="email" class={label}>E-mail professionnel *</label><input id="email" name="email" type="email" required maxlength="160" autocomplete="email" class={field} /></div>
+        <div><label for="organisation" class={label}>Organisation *</label><input id="organisation" name="organisation" required maxlength="160" autocomplete="organization" class={field} /></div>
+        <div><label for="telephone" class={label}>Téléphone (facultatif)</label><input id="telephone" name="telephone" type="tel" maxlength="30" autocomplete="tel" class={field} /></div>
+        <div>
+            <label for="type_organisation" class={label}>Type d’organisation *</label>
+            <select id="type_organisation" name="type_organisation" required class={field}>
+                <option value="">Choisir…</option>
+                <option>Administration publique</option>
+                <option>Collectivité territoriale</option>
+                <option>Établissement public</option>
+                <option>Entreprise privée</option>
+                <option>Cabinet ou prestataire d’archivage</option>
+                <option>Autre</option>
+            </select>
+        </div>
+        <div><label for="ville" class={label}>Ville *</label><input id="ville" name="ville" required maxlength="80" autocomplete="address-level2" class={field} /></div>
+    </div>
+
+    <div data-for="produit" class="grid gap-5 sm:grid-cols-2">
+        <div><label for="volume" class={label}>Volume approximatif d’archives</label><input id="volume" name="volume" maxlength="120" placeholder="ex. 2 000 boîtes, 300 mètres linéaires" class={field} /></div>
+        <div>
+            <label for="langues" class={label}>Langues des documents</label>
+            <select id="langues" name="langues" class={field}>
+                <option value="">Choisir…</option>
+                <option>Arabe et français</option>
+                <option>Surtout en arabe</option>
+                <option>Surtout en français</option>
+                <option>Autre</option>
+            </select>
+        </div>
+    </div>
+
+    <div data-for="sur-mesure" class="space-y-5">
+        <div><label for="besoin" class={label}>Décrivez votre besoin</label><textarea id="besoin" name="besoin" rows="5" maxlength="4000" class={field}></textarea></div>
+        <div class="grid gap-5 sm:grid-cols-2">
+            <div>
+                <label for="delai" class={label}>Délai souhaité</label>
+                <select id="delai" name="delai" class={field}><option value="">Choisir…</option><option>Moins de 3 mois</option><option>3 à 6 mois</option><option>Plus de 6 mois</option><option>Pas encore défini</option></select>
+            </div>
+            <div>
+                <label for="budget" class={label}>Budget indicatif (facultatif)</label>
+                <select id="budget" name="budget" class={field}><option value="">Préférer ne pas répondre</option><option>Moins de 100 000 MAD</option><option>100 000 à 300 000 MAD</option><option>300 000 à 1 000 000 MAD</option><option>Plus de 1 000 000 MAD</option></select>
+            </div>
+        </div>
+    </div>
+
+    <div><label for="message" class={label}>Message (facultatif)</label><textarea id="message" name="message" rows="3" maxlength="2000" class={field}></textarea></div>
+
+    <!-- Honeypot: invisible to people, filled by bots. -->
+    <div class="hidden" aria-hidden="true"><label for="site_web">Site web</label><input id="site_web" name="site_web" tabindex="-1" autocomplete="off" /></div>
+
+    <div class="cf-turnstile" data-sitekey={site.turnstileSiteKey} data-language="fr"></div>
+
+    <label class="flex items-start gap-3 text-sm text-stone-600">
+        <input type="checkbox" name="consentement" value="oui" required class="mt-1 accent-brand-600" />
+        <span>
+            J’accepte que mes données soient utilisées par {site.orgName} pour répondre à ma demande, et pour rien d’autre. Elles
+            ne sont ni vendues ni transmises à des tiers. Conformément à la loi n° 09-08, je peux y accéder, les faire rectifier ou
+            m’opposer à leur traitement en écrivant à {site.email}. <a href="/politique-de-confidentialite/" class="text-brand-700 underline">Politique de confidentialité</a>
+        </span>
+    </label>
+
+    <div class="flex flex-wrap items-center gap-4">
+        <button type="submit" class="rounded-md bg-brand-600 px-6 py-3 font-semibold text-white hover:bg-brand-700 disabled:opacity-60">Envoyer ma demande</button>
+        <p id="lead-status" role="status" aria-live="polite" class="text-sm"></p>
+    </div>
+</form>
+
+<script is:inline src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+<script>
+    const form = document.getElementById('lead-form') as HTMLFormElement;
+    const status = document.getElementById('lead-status')!;
+    const params = new URLSearchParams(location.search);
+    const preset = params.get('type');
+    if (preset) form.querySelector<HTMLInputElement>(`input[name=type][value="${preset}"]`)?.click();
+
+    function showFields() {
+        const type = (form.elements.namedItem('type') as RadioNodeList).value;
+        form.querySelector<HTMLElement>('[data-for=produit]')!.hidden = type === 'sur-mesure';
+        form.querySelector<HTMLElement>('[data-for=sur-mesure]')!.hidden = type !== 'sur-mesure';
+    }
+    form.addEventListener('change', showFields);
+    showFields();
+    if (params.get('erreur')) status.textContent = 'La demande n’a pas pu être envoyée : vérifiez les champs et réessayez.';
+
+    form.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        if (!form.checkValidity()) {
+            form.reportValidity();
+            return;
+        }
+        const button = form.querySelector('button[type=submit]') as HTMLButtonElement;
+        button.disabled = true;
+        status.className = 'text-sm text-stone-600';
+        status.textContent = 'Envoi…';
+        try {
+            const response = await fetch(form.action, { method: 'POST', body: new FormData(form), headers: { Accept: 'application/json' } });
+            const result = await response.json().catch(() => ({}));
+            if (!response.ok) throw new Error(result.error || 'Envoi impossible pour le moment.');
+            location.href = '/merci/';
+        } catch (error) {
+            status.className = 'text-sm text-red-700';
+            status.textContent = `${(error as Error).message} Vous pouvez aussi écrire directement à l’adresse indiquée en bas de page.`;
+            button.disabled = false;
+            (window as any).turnstile?.reset();
+        }
+    });
+</script>

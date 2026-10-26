@@ -1,0 +1,48 @@
+---
+import Page from '../../layouts/Page.astro';
+import Screenshot from '../../components/Screenshot.astro';
+import { CUSTOM_PAGES } from '../../config/nav.mjs';
+import { serviceLd } from '../../lib/schema.mjs';
+import capture from '../../assets/screenshots/mobile/04-prise-de-vue.png';
+
+const description = "Application Android de collecte de données terrain sans réseau : formulaires, photos contrôlées, codes anti-erreur, export vers vos systèmes, sur mesure.";
+---
+
+<Page
+    title="Application de collecte de données terrain hors ligne (Android)"
+    h1="Collecte de données terrain hors ligne"
+    description={description}
+    lead="Inventaires, relevés, contrôles, enquêtes : quand les équipes travaillent là où le réseau manque, l’application doit tout faire sur le téléphone et transférer ses données de façon sûre au retour."
+    breadcrumbs={[{ name: 'Accueil', href: '/' }, { name: 'Applications sur mesure', href: '/applications-sur-mesure/' }, { name: 'Collecte terrain hors ligne', href: '/applications-sur-mesure/collecte-terrain-hors-ligne/' }]}
+    jsonLd={[serviceLd({ name: 'Applications de collecte terrain hors ligne', description, path: '/applications-sur-mesure/collecte-terrain-hors-ligne/' })]}
+    offer="sur-mesure"
+    siblings={CUSTOM_PAGES}
+    siblingsTitle="Types de projets"
+>
+    <h2>Ce qu’une bonne application terrain doit garantir</h2>
+    <ul>
+        <li><strong>Rien ne se perd</strong> : tout est enregistré sur le téléphone, et effacé seulement après confirmation que le transfert a réussi.</li>
+        <li><strong>Des saisies fiables</strong> : identifiants à caractère de contrôle, listes de valeurs, contrôles au moment de la saisie plutôt qu’au bureau.</li>
+        <li><strong>Des photos exploitables</strong> : netteté et luminosité vérifiées tout de suite, pendant que l’agent est encore sur place.</li>
+        <li><strong>Un transfert vérifiable</strong> : chaque fichier accompagné de son empreinte, doublons et conflits détectés à l’import.</li>
+        <li><strong>Une interface dans la langue de l’agent</strong>, arabe ou français, utilisable avec des gants ou en plein soleil.</li>
+    </ul>
+    <div class="my-8 grid items-center gap-8 sm:grid-cols-[auto_1fr]">
+        <div class="w-56"><Screenshot src={capture} alt="Application de capture : prise de vue d’un document" kind="mobile" /></div>
+        <p>
+            Ces garanties sont celles de l’application de capture du <a href="/logiciel-inventaire-archives/capture-android/">logiciel
+            d’inventaire des archives</a> : codes de boîte à lettre de contrôle, contrôle de netteté immédiat, export unique par
+            session, photos effacées seulement après confirmation de l’import sur le PC. Une application terrain sur mesure
+            repart de ces briques, adaptées à vos formulaires.
+        </p>
+    </div>
+
+    <h2>Questions à se poser avant de commencer</h2>
+    <ul>
+        <li>Quelles données, quels formulaires, quelles photos ? Qu’est-ce qui doit être contrôlé sur le terrain ?</li>
+        <li>Les téléphones sont-ils fournis par l’organisation, avec quelle version d’Android ?</li>
+        <li>Comment les données remontent-elles : câble, réseau interne, à quelle fréquence ?</li>
+        <li>Où vont-elles ensuite : une base interne, un tableur, un système existant ?</li>
+    </ul>
+    <p>Pour approfondir : <a href="/blog/collecte-donnees-terrain-android-bonnes-pratiques/">collecte de données terrain sur Android, les bonnes pratiques</a>.</p>
+</Page>

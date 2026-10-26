@@ -1,0 +1,25 @@
+---
+// Category pages exist only from 3 articles: below that they would be thin duplicates of /blog/.
+import Base from '../../../layouts/Base.astro';
+import PostList from '../../../components/PostList.astro';
+import { CATEGORIES, publishedPosts } from '../../../lib/posts.mjs';
+
+export async function getStaticPaths() {
+    const posts = await publishedPosts();
+    return Object.entries(CATEGORIES)
+        .map(([key, label]) => ({ key, label, posts: posts.filter((p) => p.data.category === key) }))
+        .filter((c) => c.posts.length >= 3)
+        .map((c) => ({ params: { category: c.key }, props: c }));
+}
+
+const { key, label, posts } = Astro.props;
+---
+
+<Base
+    title={`${label} : guides pratiques`}
+    description={`Tous nos articles sur le thème « ${label} » : méthodes, conseils et retours d'expérience pour la gestion des archives au Maroc.`}
+    breadcrumbs={[{ name: 'Accueil', href: '/' }, { name: 'Guides et articles', href: '/blog/' }, { name: label, href: `/blog/categorie/${key}/` }]}
+>
+    <h1 class="text-3xl font-bold text-ink">{label}</h1>
+    <div class="mt-10"><PostList posts={posts} /></div>
+</Base>

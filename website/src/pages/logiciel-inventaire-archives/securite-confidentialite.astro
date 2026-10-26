@@ -1,0 +1,57 @@
+---
+import Page from '../../layouts/Page.astro';
+import { PRODUCT_PAGES } from '../../config/nav.mjs';
+---
+
+<Page
+    title="Sécurité et confidentialité : un inventaire d'archives sans cloud"
+    h1="Sécurité et confidentialité"
+    description="Comment le logiciel garde vos archives chez vous : aucune connexion Internet, réseau interne isolé, vérification réseau coupé, audit et sauvegardes."
+    lead="Des archives administratives contiennent des noms, des décisions, des dossiers personnels. Le logiciel est construit pour que rien de tout cela ne quitte vos locaux, et pour que vous puissiez le vérifier."
+    breadcrumbs={[{ name: 'Accueil', href: '/' }, { name: 'Le logiciel', href: '/logiciel-inventaire-archives/' }, { name: 'Sécurité et confidentialité', href: '/logiciel-inventaire-archives/securite-confidentialite/' }]}
+    offer="inventaire"
+    siblings={PRODUCT_PAGES}
+    siblingsTitle="Le logiciel en détail"
+>
+    <h2>Rien ne sort, en clair</h2>
+    <ul>
+        <li><strong>Aucune connexion Internet</strong>, à aucun moment : ni le PC ni les téléphones n’en ont besoin.</li>
+        <li><strong>Pas de compte</strong> chez un éditeur, pas de nuage, pas de mise à jour automatique, pas de statistiques envoyées.</li>
+        <li>Les photos passent du téléphone au PC <strong>par câble USB</strong>. Les téléphones restent en mode avion.</li>
+        <li>L’OCR, l’extraction des champs, la recherche et l’IA optionnelle tournent <strong>sur le PC lui-même</strong>.</li>
+        <li>L’installation se fait depuis une clé USB ; chaque fichier est contrôlé par son empreinte SHA-256 avant d’être copié.</li>
+    </ul>
+
+    <h2>Installation avec Docker : isolement vérifiable</h2>
+    <p>
+        Les services (base de données, recherche, lecture, IA) tournent dans un réseau Docker <strong>interne</strong> qui n’a
+        aucune route vers l’extérieur : même si le PC était branché à Internet par erreur, ils ne pourraient rien envoyer. Une
+        seule passerelle publie la page web, et seulement sur le PC lui-même (adresse 127.0.0.1), jamais sur le réseau local.
+    </p>
+    <p>
+        La <strong>vérification d’installation</strong>, à faire réseau coupé, traite un export d’exemple de bout en bout puis
+        contrôle que <strong>aucun service ne peut joindre Internet</strong>. Son rapport est enregistré sur le PC.
+    </p>
+
+    <h2>Installation sans Docker (mode portable)</h2>
+    <p>
+        Tous les programmes écoutent sur le PC lui-même uniquement. En option, la page web peut être ouverte aux autres PC d’un
+        <strong>réseau local fermé</strong> : seules les adresses listées par l’administrateur reçoivent une réponse, vérifiées par
+        le pare-feu de Windows et par l’application ; la base de données, la recherche et la lecture restent inaccessibles depuis
+        le réseau. Les échanges sur ce réseau ne sont pas chiffrés : à réserver à un réseau sans Internet ni visiteurs.
+    </p>
+
+    <h2>Accès et traçabilité</h2>
+    <ul>
+        <li>Un compte par personne, rôle <strong>Réviseur</strong> ou <strong>Administrateur</strong>. Un compte se désactive, il n’est jamais supprimé, pour garder l’historique.</li>
+        <li><strong>Journal d’audit</strong> : chaque modification d’un document ou d’une boîte est enregistrée avec son auteur, sa date, l’état avant et après.</li>
+        <li>Réglages des téléphones protégés par un code PIN ; le téléphone n’en garde qu’une empreinte.</li>
+    </ul>
+
+    <h2>Sauvegardes</h2>
+    <p>
+        La base et l’index de recherche sont sauvegardés chaque nuit sur le PC (les 7 dernières sont gardées). Une copie
+        complète, photos comprises, se fait vers un disque USB, de préférence chaque semaine. Ces sauvegardes contiennent toutes
+        les données, sans chiffrement par le logiciel : chiffrez le disque (BitLocker To Go sous Windows) et rangez-le sous clé.
+    </p>
+</Page>

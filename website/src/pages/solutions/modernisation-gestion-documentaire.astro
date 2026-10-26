@@ -1,0 +1,29 @@
+---
+import Page from '../../layouts/Page.astro';
+import { SOLUTION_PAGES } from '../../config/nav.mjs';
+---
+
+<Page
+    title="Moderniser la gestion documentaire sans perdre la maîtrise des données"
+    h1="Organisations qui modernisent leur gestion documentaire"
+    description="Moderniser la gestion documentaire pas à pas : inventorier l'existant papier, rendre les archives cherchables, puis outiller les circuits, sans cloud imposé."
+    lead="Avant de numériser ou d’acheter une GED, il faut savoir ce que l’on a. Un inventaire rapide de l’existant papier est souvent la première étape utile, et la moins risquée."
+    breadcrumbs={[{ name: 'Accueil', href: '/' }, { name: 'Solutions', href: '/solutions/' }, { name: 'Modernisation documentaire', href: '/solutions/modernisation-gestion-documentaire/' }]}
+    siblings={SOLUTION_PAGES}
+    siblingsTitle="Solutions"
+>
+    <h2>Une démarche par étapes</h2>
+    <ol>
+        <li><strong>Inventorier l’existant</strong> : chaque boîte codée et localisée, chaque dossier photographié et décrit. C’est ce que fait le <a href="/logiciel-inventaire-archives/">logiciel d’inventaire</a>.</li>
+        <li><strong>Rendre cherchable</strong> : la recherche en arabe et en français sur le texte des couvertures répond déjà à beaucoup de demandes.</li>
+        <li><strong>Décider</strong>, sur la base de l’inventaire, de ce qui mérite une numérisation complète, un tri ou une élimination selon les règles applicables.</li>
+        <li><strong>Outiller les circuits</strong> qui le justifient : courrier, prêts de dossiers, extraction de données de formulaires, avec des <a href="/applications-sur-mesure/">applications sur mesure</a>.</li>
+    </ol>
+
+    <h2>Garder la maîtrise des données</h2>
+    <p>
+        Moderniser ne veut pas dire tout confier à un service en ligne. Les outils que nous proposons fonctionnent sur vos
+        propres machines, y compris la lecture automatique et l’IA, et se sauvegardent sur vos disques.
+    </p>
+    <p>À lire : <a href="/blog/applications-hors-ligne-quand-indispensables/">applications hors ligne, quand sont-elles indispensables ?</a></p>
+</Page>

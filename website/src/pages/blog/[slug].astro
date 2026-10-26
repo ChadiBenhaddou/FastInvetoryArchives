@@ -1,0 +1,71 @@
+---
+import { render } from 'astro:content';
+import Base from '../../layouts/Base.astro';
+import CtaBand from '../../components/CtaBand.astro';
+import ArticleCard from '../../components/ArticleCard.astro';
+import { CATEGORIES, formatDate, postPath, publishedPosts, readingMinutes, relatedPosts } from '../../lib/posts.mjs';
+import { articleLd } from '../../lib/schema.mjs';
+
+export async function getStaticPaths() {
+    const posts = await publishedPosts();
+    return posts.map((post) => ({ params: { slug: post.data.slug }, props: { post, all: posts } }));
+}
+
+const { post, all } = Astro.props;
+const { Content, headings } = await render(post);
+const data = post.data;
+const path = postPath(post);
+const toc = headings.filter((h) => h.depth === 2);
+const related = relatedPosts(post, all);
+const updated = data.updatedDate && data.updatedDate > data.pubDate ? data.updatedDate : null;
+---
+
+<Base
+    title={data.title}
+    description={data.description}
+    canonicalPath={data.canonicalURL ? new URL(data.canonicalURL).pathname : path}
+    ogType="article"
+    jsonLd={[articleLd(data, path)]}
+    breadcrumbs={[{ name: 'Accueil', href: '/' }, { name: 'Guides et articles', href: '/blog/' }, { name: data.title, href: path }]}
+>
+    <article class="mx-auto max-w-3xl">
+        <p class="text-sm font-semibold uppercase tracking-wide text-brand-700">{CATEGORIES[data.category]}</p>
+        <h1 class="mt-2 text-3xl font-bold leading-tight text-ink sm:text-4xl">{data.title}</h1>
+        <p class="mt-4 text-lg leading-relaxed text-stone-600">{data.description}</p>
+        <p class="mt-4 text-sm text-stone-500">
+            Par {data.author} · Publié le <time datetime={data.pubDate.toISOString()}>{formatDate(data.pubDate)}</time>
+            {updated && <> · Mis à jour le <time datetime={updated.toISOString()}>{formatDate(updated)}</time></>}
+            · {readingMinutes(post.body ?? '')} min de lecture
+        </p>
+
+        {toc.length >= 3 && (
+            <nav aria-label="Sommaire" class="mt-8 rounded-xl border border-stone-200 bg-white p-5">
+                <p class="font-semibold text-ink">Sommaire</p>
+                <ol class="mt-3 list-decimal space-y-1.5 ps-5 text-sm">
+                    {toc.map((h) => <li><a href={`#${h.slug}`} class="text-stone-700 hover:text-brand-700 hover:underline">{h.text}</a></li>)}
+                </ol>
+            </nav>
+        )}
+
+        <div class="prose-site mt-8"><Content /></div>
+
+        {data.sources.length > 0 && (
+            <section class="mt-12 rounded-xl bg-stone-100 p-5 text-sm" aria-labelledby="sources">
+                <h2 id="sources" class="font-semibold text-ink">Sources</h2>
+                <ul class="mt-3 list-disc space-y-1.5 ps-5">
+                    {data.sources.map((s) => <li><a href={s.url} rel="noopener" class="text-brand-700 hover:underline">{s.title}</a></li>)}
+                </ul>
+                <p class="mt-3 text-stone-500">Cet article est informatif. Pour une obligation légale précise, référez-vous aux textes officiels en vigueur.</p>
+            </section>
+        )}
+    </article>
+
+    <div class="mx-auto max-w-3xl"><CtaBand offer={data.offer} /></div>
+
+    {related.length > 0 && (
+        <section class="mx-auto mt-16 max-w-6xl" aria-labelledby="related">
+            <h2 id="related" class="text-2xl font-semibold text-ink">À lire aussi</h2>
+            <div class="mt-6 grid gap-5 md:grid-cols-3">{related.map((p) => <ArticleCard post={p} />)}</div>
+        </section>
+    )}
+</Base>

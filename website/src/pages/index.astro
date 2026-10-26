@@ -1,0 +1,150 @@
+---
+import Base from '../layouts/Base.astro';
+import Screenshot from '../components/Screenshot.astro';
+import CtaBand from '../components/CtaBand.astro';
+import Faq from '../components/Faq.astro';
+import ArticleCard from '../components/ArticleCard.astro';
+import { SOLUTION_PAGES } from '../config/nav.mjs';
+import { faqLd, organizationLd, softwareLd, websiteLd } from '../lib/schema.mjs';
+import { publishedPosts } from '../lib/posts.mjs';
+import dashboard from '../assets/screenshots/desktop/dashboard.png';
+import searchAr from '../assets/screenshots/desktop/search-ar.png';
+import boxDetail from '../assets/screenshots/desktop/box-detail.png';
+import code from '../assets/screenshots/mobile/03-code-genere.png';
+import capture from '../assets/screenshots/mobile/04-prise-de-vue.png';
+
+const posts = (await publishedPosts()).slice(0, 3);
+
+const steps = [
+    { n: '1', title: 'Photo sur le téléphone', text: 'Le téléphone donne un code à chaque boîte. L’agent l’écrit sur la boîte, le photographie, puis photographie la couverture de chaque dossier. Netteté et lumière sont contrôlées tout de suite.' },
+    { n: '2', title: 'Transfert par câble USB', text: 'Fin de session : un fichier ZIP par téléphone, copié sur le PC par câble. Pas de réseau, pas de nuage, le téléphone peut rester en mode avion.' },
+    { n: '3', title: 'Lecture automatique', text: 'Le PC lit chaque page en arabe et en français (OCR) et en extrait le type, la date, la référence, le titre, les personnes et les organismes. La boîte est terminée sans validation à faire.' },
+    { n: '4', title: 'Recherche et inventaire', text: 'Recherche en arabe et en français dans tout le texte, filtres par salle, période ou type, inventaire Excel. Les documents douteux sont signalés et corrigeables à tout moment.' },
+];
+
+const points = [
+    { title: '100 % hors ligne', text: 'Ni Internet, ni compte, ni nuage, ni statistiques envoyées. Les données restent sur le PC de l’organisation.' },
+    { title: 'Arabe et français', text: 'Lecture des deux langues, interface du téléphone en arabe ou en français, recherche qui tolère les variantes d’écriture (أ/إ/ا, ة/ه, ى/ي).' },
+    { title: 'Téléphones Android ordinaires', text: 'Android 7 ou plus récent, appareil photo avec mise au point automatique. Plusieurs téléphones en parallèle, une lettre par appareil.' },
+    { title: 'Codes de boîte sans erreur de recopie', text: 'La lettre de contrôle détecte un chiffre faux, deux chiffres inversés ou une mauvaise lettre d’appareil.' },
+    { title: 'Aucune validation document par document', text: 'Une boîte est terminée dès que ses photos sont lues. Lecture peu sûre, manuscrit ou page sans texte : le document est signalé, pour information.' },
+    { title: 'Inventaire Excel et traçabilité', text: 'Feuilles Boîtes et Documents, export CSV, journal de toutes les corrections, sauvegardes chaque nuit et vers disque USB.' },
+];
+
+const faq = [
+    { q: 'Faut-il une connexion Internet ?', a: 'Non, à aucun moment. Le PC et les téléphones fonctionnent sans Internet ; les photos passent du téléphone au PC par câble USB. L’installation se fait elle aussi depuis une clé USB.' },
+    { q: 'Quels documents le logiciel sait-il lire ?', a: 'Les documents imprimés en arabe et en français. Les documents manuscrits sont mal lus : ils sont signalés « Manuscrit probable » et peuvent être corrigés à la main. Les pages lues avec une confiance faible sont aussi signalées.' },
+    { q: 'Faut-il valider chaque document ?', a: 'Non. Une boîte passe « Terminée » dès que ses photos sont lues. Les documents qui posent problème restent signalés, et chacun peut être corrigé quand on le souhaite depuis la page de sa boîte ; la correction est tracée.' },
+    { q: 'Combien de temps faut-il par photo ?', a: 'Cela dépend du PC et du moteur de lecture. Mesuré sur un portable Core i5 de 11e génération avec 16 Go de mémoire : environ 0,8 seconde par photo avec le moteur OCR de Windows (optionnel, licence à valider), environ 6 à 15 secondes avec le moteur libre PaddleOCR.' },
+    { q: 'Quel matériel faut-il ?', a: 'Un PC Windows 10/11 ou Ubuntu 22.04/24.04 avec 16 Go de mémoire et un SSD (environ 0,4 Mo par photo), et des téléphones Android 7 ou plus récents. Le détail est sur la page Configuration requise.' },
+    { q: 'Peut-on l’utiliser sur plusieurs PC ?', a: 'Oui : un PC garde les données et les autres PC d’un réseau local fermé l’ouvrent dans leur navigateur (accès limité aux adresses autorisées). Sans réseau, les données passent d’un PC à l’autre par clé USB.' },
+    { q: 'Quel est le prix ?', a: 'Le logiciel est proposé avec l’installation, la formation et le support ; le tarif dépend du volume d’archives et du nombre de postes. Demandez un devis ou un pilote sur un échantillon de vos boîtes.' },
+];
+---
+
+<Base
+    title="Inventaire des archives au Maroc, hors ligne, en arabe et en français"
+    description="Inventaire hors ligne des archives papier : photo sur Android, câble USB, OCR arabe et français, recherche et inventaire Excel. Vos données restent chez vous."
+    jsonLd={[organizationLd(), websiteLd(), softwareLd(), faqLd(faq)]}
+    wide
+>
+    <section class="bg-white">
+        <div class="mx-auto grid max-w-6xl items-center gap-10 px-5 py-14 lg:grid-cols-[1fr_1.15fr] lg:py-20">
+            <div>
+                <p class="text-sm font-semibold uppercase tracking-wide text-brand-700">Logiciel d’inventaire des archives</p>
+                <h1 class="mt-3 text-4xl font-bold leading-tight text-ink sm:text-5xl">Inventoriez vos archives papier en arabe et en français, sans que vos données quittent vos locaux</h1>
+                <p class="mt-5 text-lg leading-relaxed text-stone-600">
+                    Des téléphones Android photographient les dossiers de chaque boîte, un PC sans Internet lit les pages et
+                    construit l’inventaire : recherche en arabe et en français, inventaire Excel, journal de chaque correction.
+                </p>
+                <div class="mt-8 flex flex-wrap gap-3">
+                    <a href="/demander-une-demonstration/" class="rounded-md bg-brand-600 px-5 py-3 font-semibold text-white hover:bg-brand-700">Demander une démonstration</a>
+                    <a href="/logiciel-inventaire-archives/" class="rounded-md border border-stone-300 px-5 py-3 font-semibold text-ink hover:bg-stone-100">Découvrir le logiciel</a>
+                </div>
+                <p class="mt-4 text-sm text-stone-500">Ou <a href="/contact/?type=devis" class="font-medium text-brand-700 hover:underline">demander un devis / un pilote</a> sur un échantillon de vos boîtes.</p>
+            </div>
+            <div class="grid grid-cols-[1fr_auto] items-end gap-4">
+                <Screenshot src={dashboard} alt="Tableau de bord du logiciel : photos traitées, boîtes terminées, documents signalés" eager />
+                <div class="hidden w-32 sm:block"><Screenshot src={code} alt="Téléphone : code de boîte K-0001-A à écrire au marqueur" kind="mobile" eager /></div>
+            </div>
+        </div>
+    </section>
+
+    <div class="mx-auto max-w-6xl px-5">
+        <section class="py-16" aria-labelledby="etapes">
+            <h2 id="etapes" class="text-3xl font-semibold text-ink">Quatre étapes, de la boîte à l’inventaire</h2>
+            <ol class="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+                {steps.map((s) => (
+                    <li class="rounded-xl border border-stone-200 bg-white p-5">
+                        <span class="flex size-9 items-center justify-center rounded-full bg-brand-100 font-bold text-brand-700">{s.n}</span>
+                        <h3 class="mt-4 font-semibold text-ink">{s.title}</h3>
+                        <p class="mt-2 text-sm leading-relaxed text-stone-600">{s.text}</p>
+                    </li>
+                ))}
+            </ol>
+            <div class="mt-10 grid items-start gap-8 lg:grid-cols-[auto_1fr]">
+                <div class="w-56"><Screenshot src={capture} alt="Prise de vue d’une page de dossier sur le téléphone" kind="mobile" caption="Prise de vue sur le téléphone" /></div>
+                <Screenshot src={boxDetail} alt="Page d’une boîte : photo du document, texte lu et champs extraits" caption="Sur le PC : la photo, le texte lu et les champs extraits" />
+            </div>
+        </section>
+
+        <section class="py-8" aria-labelledby="atouts">
+            <h2 id="atouts" class="text-3xl font-semibold text-ink">Ce qui le distingue</h2>
+            <div class="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                {points.map((p) => (
+                    <div class="rounded-xl bg-white p-6 ring-1 ring-stone-200">
+                        <h3 class="font-semibold text-ink">{p.title}</h3>
+                        <p class="mt-2 text-sm leading-relaxed text-stone-600">{p.text}</p>
+                    </div>
+                ))}
+            </div>
+            <div class="mt-10 grid items-center gap-8 lg:grid-cols-2">
+                <div>
+                    <h3 class="text-2xl font-semibold text-ink">Retrouver un dossier en quelques secondes</h3>
+                    <p class="mt-3 leading-relaxed text-stone-600">
+                        La recherche porte sur tout le texte lu et sur les champs extraits, en arabe comme en français. Elle tolère
+                        les fautes de frappe et les variantes d’écriture arabe, surligne les mots trouvés et se filtre par type de
+                        document, période, salle, agent ou boîte.
+                    </p>
+                    <a href="/logiciel-inventaire-archives/recherche-et-export/" class="mt-4 inline-block font-semibold text-brand-700 hover:underline">Recherche et inventaire Excel →</a>
+                </div>
+                <Screenshot src={searchAr} alt="Recherche en arabe avec les mots trouvés surlignés" />
+            </div>
+        </section>
+
+        <section class="mt-16 rounded-2xl bg-brand-50 p-8 ring-1 ring-brand-100 sm:p-10" aria-labelledby="sur-mesure">
+            <h2 id="sur-mesure" class="text-3xl font-semibold text-ink">Votre besoin est différent ? Nous développons des applications sur mesure</h2>
+            <p class="mt-4 max-w-3xl leading-relaxed text-stone-700">
+                La même équipe conçoit des applications adaptées à votre organisation : collecte terrain hors ligne sur Android,
+                OCR et extraction de documents arabes, IA installée chez vous, outils internes de gestion documentaire avec rôles,
+                journal d’audit et sauvegardes. Chaque projet commence par une analyse de votre besoin.
+            </p>
+            <div class="mt-6 flex flex-wrap gap-3">
+                <a href="/applications-sur-mesure/" class="rounded-md bg-ink px-5 py-3 font-semibold text-white hover:bg-stone-800">Applications sur mesure</a>
+                <a href="/contact/?type=sur-mesure" class="rounded-md border border-stone-400 px-5 py-3 font-semibold text-ink hover:bg-white">Parler de votre projet</a>
+            </div>
+        </section>
+
+        <section class="py-16" aria-labelledby="pour-qui">
+            <h2 id="pour-qui" class="text-3xl font-semibold text-ink">Pour qui ?</h2>
+            <ul class="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {SOLUTION_PAGES.map((s) => (
+                    <li><a href={s.href} class="block h-full rounded-xl border border-stone-200 bg-white p-5 font-semibold text-ink hover:border-brand-500">{s.label} →</a></li>
+                ))}
+            </ul>
+        </section>
+
+        {posts.length > 0 && (
+            <section aria-labelledby="guides">
+                <div class="flex items-end justify-between gap-4">
+                    <h2 id="guides" class="text-3xl font-semibold text-ink">Guides pratiques</h2>
+                    <a href="/blog/" class="font-semibold text-brand-700 hover:underline">Tous les articles →</a>
+                </div>
+                <div class="mt-8 grid gap-5 md:grid-cols-3">{posts.map((post) => <ArticleCard post={post} />)}</div>
+            </section>
+        )}
+
+        <Faq items={faq} />
+        <CtaBand />
+    </div>
+</Base>

@@ -1,0 +1,14 @@
+---
+import ArticleCard from './ArticleCard.astro';
+interface Props { posts: any[]; page?: { currentPage: number; lastPage: number; url: { prev?: string; next?: string } } }
+const { posts, page } = Astro.props;
+---
+
+<div class="grid gap-5 md:grid-cols-2 lg:grid-cols-3">{posts.map((post) => <ArticleCard post={post} />)}</div>
+{page && page.lastPage > 1 && (
+    <nav aria-label="Pagination" class="mt-10 flex items-center justify-between text-sm">
+        {page.url.prev ? <a href={page.url.prev} rel="prev" class="rounded-md border border-stone-300 px-4 py-2 hover:bg-white">← Articles plus récents</a> : <span />}
+        <span class="text-stone-500">Page {page.currentPage} sur {page.lastPage}</span>
+        {page.url.next ? <a href={page.url.next} rel="next" class="rounded-md border border-stone-300 px-4 py-2 hover:bg-white">Articles plus anciens →</a> : <span />}
+    </nav>
+)}

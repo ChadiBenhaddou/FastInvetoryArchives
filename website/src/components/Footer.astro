@@ -1,0 +1,45 @@
+---
+import { CUSTOM_PAGES, LEGAL_NAV, PRODUCT_PAGES, SOLUTION_PAGES } from '../config/nav.mjs';
+import { site } from '../config/site.mjs';
+
+const year = new Date().getFullYear();
+---
+
+<footer class="mt-16 bg-ink text-stone-300">
+    <div class="mx-auto grid max-w-6xl gap-10 px-5 py-12 sm:grid-cols-2 lg:grid-cols-4">
+        <div>
+            <p class="font-semibold text-white">{site.productName}</p>
+            <p class="mt-3 text-sm leading-relaxed">
+                Inventaire hors ligne des archives papier, en arabe et en français. Aucune donnée de vos archives ne
+                quitte vos locaux.
+            </p>
+            <p class="mt-4 text-sm">
+                <a href={`mailto:${site.email}`} class="hover:text-white">{site.email}</a>
+                {site.phone && <><br /><a href={`tel:${site.phone.replace(/\s/g, '')}`} class="hover:text-white">{site.phone}</a></>}
+            </p>
+        </div>
+        <nav aria-label="Le logiciel">
+            <p class="font-semibold text-white"><a href="/logiciel-inventaire-archives/">Le logiciel</a></p>
+            <ul class="mt-3 space-y-2 text-sm">{PRODUCT_PAGES.map((p) => <li><a href={p.href} class="hover:text-white">{p.label}</a></li>)}</ul>
+        </nav>
+        <nav aria-label="Applications sur mesure et solutions">
+            <p class="font-semibold text-white"><a href="/applications-sur-mesure/">Applications sur mesure</a></p>
+            <ul class="mt-3 space-y-2 text-sm">{CUSTOM_PAGES.map((p) => <li><a href={p.href} class="hover:text-white">{p.label}</a></li>)}</ul>
+            <p class="mt-6 font-semibold text-white"><a href="/solutions/">Solutions</a></p>
+            <ul class="mt-3 space-y-2 text-sm">{SOLUTION_PAGES.map((p) => <li><a href={p.href} class="hover:text-white">{p.label}</a></li>)}</ul>
+        </nav>
+        <nav aria-label="Informations">
+            <p class="font-semibold text-white">Informations</p>
+            <ul class="mt-3 space-y-2 text-sm">
+                <li><a href="/blog/" class="hover:text-white">Guides et articles</a></li>
+                <li><a href="/guides/" class="hover:text-white">Guides par thème</a></li>
+                <li><a href="/a-propos/" class="hover:text-white">À propos</a></li>
+                <li><a href="/demander-une-demonstration/" class="hover:text-white">Demander une démonstration</a></li>
+                {LEGAL_NAV.map((p) => <li><a href={p.href} class="hover:text-white">{p.label}</a></li>)}
+            </ul>
+        </nav>
+    </div>
+    <div class="border-t border-stone-800">
+        <p class="mx-auto max-w-6xl px-5 py-5 text-xs text-stone-400">© {year} {site.orgName}. Site sans cookie publicitaire ni traceur tiers.</p>
+    </div>
+</footer>

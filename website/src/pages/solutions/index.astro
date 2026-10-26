@@ -1,0 +1,19 @@
+---
+import Page from '../../layouts/Page.astro';
+import { SOLUTION_PAGES } from '../../config/nav.mjs';
+---
+
+<Page
+    title="Solutions d'inventaire des archives par type d'organisation"
+    h1="Solutions par type d’organisation"
+    description="Comment administrations, entreprises, prestataires d'archivage et services d'archives au Maroc utilisent un inventaire d'archives hors ligne."
+    lead="Le même logiciel répond à des situations différentes : un service d’archives qui reprend un arriéré, un prestataire qui travaille chez plusieurs clients, une entreprise qui veut retrouver ses contrats."
+    breadcrumbs={[{ name: 'Accueil', href: '/' }, { name: 'Solutions', href: '/solutions/' }]}
+    siblings={SOLUTION_PAGES}
+    siblingsTitle="Solutions"
+>
+    <ul>
+        {SOLUTION_PAGES.map((s) => <li><a href={s.href}>{s.label}</a></li>)}
+    </ul>
+    <p>Votre organisation ne figure pas dans cette liste, ou votre besoin dépasse l’inventaire ? Voyez nos <a href="/applications-sur-mesure/">applications sur mesure</a>.</p>
+</Page>

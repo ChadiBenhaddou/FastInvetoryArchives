@@ -1,0 +1,42 @@
+---
+import Page from '../../layouts/Page.astro';
+import { PRODUCT_PAGES } from '../../config/nav.mjs';
+---
+
+<Page
+    title="Configuration requise : PC, téléphones et disque pour l'inventaire"
+    h1="Configuration requise"
+    description="Matériel pour inventorier vos archives hors ligne : PC Windows ou Ubuntu, mémoire, disque (0,4 Mo par photo), téléphones Android et sauvegarde."
+    lead="Pas de serveur à acheter : un PC de bureau récent, des téléphones Android ordinaires et un disque de sauvegarde suffisent."
+    breadcrumbs={[{ name: 'Accueil', href: '/' }, { name: 'Le logiciel', href: '/logiciel-inventaire-archives/' }, { name: 'Configuration requise', href: '/logiciel-inventaire-archives/configuration-requise/' }]}
+    offer="inventaire"
+    siblings={PRODUCT_PAGES}
+    siblingsTitle="Le logiciel en détail"
+>
+    <h2>Le matériel</h2>
+    <table>
+        <thead><tr><th></th><th>Minimum</th><th>Conseillé</th></tr></thead>
+        <tbody>
+            <tr><td>PC</td><td>16 Go de mémoire, processeur 4 cœurs / 8 threads (Intel Core i5 de 10e génération ou plus récent)</td><td>32 Go, 8 cœurs, ou une carte graphique NVIDIA (8 Go) pour l’IA optionnelle</td></tr>
+            <tr><td>Disque</td><td>SSD, 40 Go libres pour l’application et environ 0,4 Mo par photo (100 000 photos ≈ 40 Go)</td><td>SSD de 500 Go</td></tr>
+            <tr><td>Système</td><td>Windows 10/11 64 bits, ou Ubuntu 22.04 / 24.04</td><td></td></tr>
+            <tr><td>Téléphones</td><td>Android 7 ou plus récent, mise au point automatique, 8 Go libres</td><td>Android 10 ou plus récent, 64 Go</td></tr>
+            <tr><td>Câbles</td><td>Un câble USB de données par téléphone (pas seulement de charge)</td><td></td></tr>
+            <tr><td>Sauvegarde</td><td>Un disque dur USB externe</td><td>Deux, gardés à deux endroits différents</td></tr>
+        </tbody>
+    </table>
+    <p>Le PC est prévu pour ne faire que ce travail : d’autres programmes ouverts ralentissent la lecture.</p>
+
+    <h2>À quelle vitesse ?</h2>
+    <p>Mesures sur un portable Core i5-11300H (4 cœurs, 16 Go), sans autre travail :</p>
+    <table>
+        <thead><tr><th>Étape</th><th>Vitesse</th><th>Ordre de grandeur sur 24 h</th></tr></thead>
+        <tbody>
+            <tr><td>Import (vérification et copie)</td><td>quelques secondes par boîte</td><td>—</td></tr>
+            <tr><td>Lecture avec l’OCR de Windows (optionnel, licence à valider) + champs + indexation</td><td>environ 0,8 s par photo (3 en parallèle)</td><td>environ 100 000 photos</td></tr>
+            <tr><td>Même chose avec PaddleOCR (libre)</td><td>environ 6 à 15 s par photo (2 en parallèle)</td><td>environ 10 000 photos</td></tr>
+            <tr><td>IA locale optionnelle (installation Docker)</td><td>1 à 2,5 minutes par document</td><td>environ 700 à 1 300 documents</td></tr>
+        </tbody>
+    </table>
+    <p>Ces chiffres valent pour ce portable. Le pilote sur vos propres boîtes et votre PC donne les vôtres.</p>
+</Page>

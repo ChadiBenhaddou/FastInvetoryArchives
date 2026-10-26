@@ -1,0 +1,35 @@
+---
+import Page from '../../layouts/Page.astro';
+import { SOLUTION_PAGES } from '../../config/nav.mjs';
+---
+
+<Page
+    title="Inventaire et recherche des archives papier pour les entreprises"
+    h1="Entreprises privées"
+    description="Inventorier les archives papier d'une entreprise au Maroc : contrats, dossiers clients, documents RH, en arabe et en français, sans cloud."
+    lead="Contrats, dossiers du personnel, pièces comptables, correspondances : les archives papier d’une entreprise sont souvent confidentielles, et rarement décrites assez finement pour être retrouvées."
+    breadcrumbs={[{ name: 'Accueil', href: '/' }, { name: 'Solutions', href: '/solutions/' }, { name: 'Entreprises', href: '/solutions/entreprises/' }]}
+    siblings={SOLUTION_PAGES}
+    siblingsTitle="Solutions"
+>
+    <h2>Pourquoi un inventaire hors ligne</h2>
+    <p>
+        Les archives d’une entreprise contiennent des données personnelles (salariés, clients) et des informations commerciales.
+        Les inventorier sans les confier à un service en ligne évite d’avoir à encadrer un transfert de données : tout reste sur
+        un PC de l’entreprise, y compris la lecture automatique des documents.
+    </p>
+
+    <h2>Ce que vous obtenez</h2>
+    <ul>
+        <li>Pour chaque boîte : son code, son emplacement (salle, étagère, rangée) et la photo de chaque dossier.</li>
+        <li>Pour chaque document : son type, sa date, sa référence, son titre, les personnes et organismes cités, quand le texte les contient.</li>
+        <li>Une <strong>recherche</strong> en arabe et en français dans tout le texte lu, pour retrouver un contrat ou un dossier en quelques secondes.</li>
+        <li>Un <strong>inventaire Excel</strong> à jour.</li>
+    </ul>
+
+    <h2>Et si votre besoin va plus loin ?</h2>
+    <p>
+        Registre du courrier, prêts de dossiers, extraction de données de factures ou de formulaires, liaison avec votre ERP :
+        nous développons aussi des <a href="/applications-sur-mesure/">applications sur mesure</a>, installées chez vous.
+    </p>
+</Page>

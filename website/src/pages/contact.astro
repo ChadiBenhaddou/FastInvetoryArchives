@@ -1,0 +1,30 @@
+---
+import Base from '../layouts/Base.astro';
+import LeadForm from '../components/LeadForm.astro';
+import { site } from '../config/site.mjs';
+---
+
+<Base
+    title="Contact : démonstration, devis ou projet sur mesure"
+    description="Contactez-nous pour une démonstration du logiciel d'inventaire des archives, un devis, un pilote sur vos boîtes ou un projet d'application sur mesure."
+    breadcrumbs={[{ name: 'Accueil', href: '/' }, { name: 'Contact', href: '/contact/' }]}
+>
+    <div class="grid gap-10 lg:grid-cols-[1fr_20rem]">
+        <div>
+            <h1 class="text-3xl font-bold text-ink sm:text-4xl">Parlons de votre projet</h1>
+            <p class="mt-4 text-lg text-stone-600">Démonstration, devis, pilote sur un échantillon de vos boîtes ou application sur mesure : décrivez votre besoin, nous vous répondons par e-mail.</p>
+            <div class="mt-8"><LeadForm /></div>
+        </div>
+        <aside class="space-y-6 text-sm text-stone-600 lg:pt-24">
+            <div class="rounded-xl bg-white p-5 ring-1 ring-stone-200">
+                <p class="font-semibold text-ink">Par e-mail</p>
+                <p class="mt-2"><a href={`mailto:${site.email}`} class="text-brand-700 hover:underline">{site.email}</a></p>
+                {site.phone && <><p class="mt-4 font-semibold text-ink">Par téléphone</p><p class="mt-2">{site.phone}</p></>}
+            </div>
+            <div class="rounded-xl bg-white p-5 ring-1 ring-stone-200">
+                <p class="font-semibold text-ink">Vos données</p>
+                <p class="mt-2">Elles servent uniquement à vous répondre. Ce site n’utilise ni cookie publicitaire ni traceur tiers.</p>
+            </div>
+        </aside>
+    </div>
+</Base>

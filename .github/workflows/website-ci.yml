@@ -1,0 +1,51 @@
+# Website only: tests, production build and site checks. Never runs for changes to the offline
+# application (backend/, mobile/, ocr-worker/, portable/…), and the application has no workflow here.
+name: website-ci
+
+on:
+  push:
+    paths: ['website/**', '.github/workflows/website-*.yml']
+  pull_request:
+    paths: ['website/**', '.github/workflows/website-*.yml']
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    working-directory: website
+
+jobs:
+  test-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: website/.nvmrc
+          cache: npm
+          cache-dependency-path: website/package-lock.json
+      - run: npm ci
+      - name: Unit tests (lead form, keyword store, DataForSEO client, quality gate, dashboard)
+        run: npm test
+      - name: Preview build + site checks
+        run: npm run build:pages
+        env:
+          SITE_ENV: preview
+      - name: Production build + site checks (example identity, proves the production guards)
+        run: npm run build:pages
+        env:
+          SITE_ENV: production
+          PUBLIC_SITE_URL: https://www.exemple-archives.ma
+          PUBLIC_ORG_NAME: Société Exemple SARL
+          PUBLIC_CONTACT_EMAIL: contact@exemple-archives.ma
+          PUBLIC_PUBLISHER_NAME: Nom Exemple
+          PUBLIC_CNDP_REFERENCE: EXEMPLE
+          PUBLIC_CNDP_TRANSFERS_VALIDATED: 'true'
+      - name: Drafts and dashboard never in the public output
+        run: |
+          test ! -e dist/dashboard
+          test ! -e dist/data.json
+          if grep -rl "DATAFORSEO\|ANTHROPIC_API_KEY\|sk-ant-" dist/; then exit 1; fi
+      - name: Dashboard build
+        run: npm run dashboard:build

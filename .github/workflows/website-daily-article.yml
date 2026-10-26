@@ -1,0 +1,170 @@
+# One article a day, researched, written, checked and published with no human action.
+#   - runs hourly from 05:07 to 12:07 UTC but only works at PUBLISH_HOUR (Morocco time, repository
+#     variable, default 9; this window covers 6 h–12 h Morocco time, change the cron for other hours);
+#   - job "write" holds the AI and DataForSEO secrets (GitHub environment "seo-automation") and has a
+#     read-only token; job "publish" can write to the repository but sees no API secret;
+#   - gate passed + AUTO_PUBLISH + not a legal topic + production build OK → commit to the default branch
+#     (Cloudflare Pages deploys); otherwise → pull request labelled needs-review;
+#   - a daily summary is posted as a comment on the "Résumé SEO quotidien" issue (e-mail to watchers).
+name: website-daily-article
+
+on:
+  schedule:
+    - cron: '7 5-12 * * *'
+  workflow_dispatch: {}
+
+concurrency:
+  group: website-daily-article
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  decide:
+    runs-on: ubuntu-latest
+    outputs:
+      go: ${{ steps.hour.outputs.go }}
+    steps:
+      - id: hour
+        env:
+          PUBLISH_HOUR: ${{ vars.PUBLISH_HOUR || '9' }}
+        run: |
+          now=$(TZ=Africa/Casablanca date +%H)
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] || [ "$((10#$now))" = "$((10#$PUBLISH_HOUR))" ]; then
+            echo "go=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "go=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  write:
+    needs: decide
+    if: needs.decide.outputs.go == 'true'
+    runs-on: ubuntu-latest
+    environment: seo-automation
+    permissions:
+      contents: read
+    outputs:
+      mode: ${{ steps.final.outputs.mode }}
+      slug: ${{ steps.article.outputs.slug }}
+      title: ${{ steps.article.outputs.title }}
+    defaults:
+      run:
+        working-directory: website
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: website/.nvmrc
+          cache: npm
+          cache-dependency-path: website/package-lock.json
+      - run: npm ci
+      - uses: actions/cache@v4
+        with:
+          path: website/research/cache
+          key: dataforseo-cache-${{ github.run_id }}
+          restore-keys: dataforseo-cache-
+      - name: Research (budget-limited), plan, write, quality gate
+        id: article
+        run: node scripts/seo/daily-article.mjs
+        env:
+          SEO_LIVE: 'true'
+          SEO_RESEARCH_DAILY: ${{ vars.SEO_RESEARCH_DAILY || 'true' }}
+          AUTO_PUBLISH: ${{ vars.AUTO_PUBLISH || 'true' }}
+          MAX_ARTICLES_PER_DAY: ${{ vars.MAX_ARTICLES_PER_DAY || '1' }}
+          SEO_DAILY_BUDGET_USD: ${{ vars.SEO_DAILY_BUDGET_USD || '1' }}
+          SEO_MONTHLY_BUDGET_USD: ${{ vars.SEO_MONTHLY_BUDGET_USD || '15' }}
+          SEO_AI_MONTHLY_BUDGET_USD: ${{ vars.SEO_AI_MONTHLY_BUDGET_USD || '20' }}
+          SEO_WRITER_MODEL: ${{ vars.SEO_WRITER_MODEL }}
+          SEO_REVIEWER_MODEL: ${{ vars.SEO_REVIEWER_MODEL }}
+          SEO_AUTHOR_NAME: ${{ vars.SEO_AUTHOR_NAME }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          DATAFORSEO_LOGIN: ${{ secrets.DATAFORSEO_LOGIN }}
+          DATAFORSEO_PASSWORD: ${{ secrets.DATAFORSEO_PASSWORD }}
+      - name: Production build with the new article (last gate check)
+        id: build
+        if: steps.article.outputs.mode != 'skip'
+        continue-on-error: true
+        run: npm run build:pages
+        env:
+          SITE_ENV: production
+          PUBLIC_SITE_URL: ${{ vars.PUBLIC_SITE_URL }}
+          PUBLIC_ORG_NAME: ${{ vars.PUBLIC_ORG_NAME }}
+          PUBLIC_CONTACT_EMAIL: ${{ vars.PUBLIC_CONTACT_EMAIL }}
+          PUBLIC_PUBLISHER_NAME: ${{ vars.PUBLIC_PUBLISHER_NAME }}
+          PUBLIC_CNDP_REFERENCE: ${{ vars.PUBLIC_CNDP_REFERENCE }}
+          PUBLIC_CNDP_TRANSFERS_VALIDATED: ${{ vars.PUBLIC_CNDP_TRANSFERS_VALIDATED }}
+      - name: Final decision
+        id: final
+        env:
+          MODE: ${{ steps.article.outputs.mode }}
+          BUILD: ${{ steps.build.outcome }}
+          SLUG: ${{ steps.article.outputs.slug }}
+        run: |
+          if [ "$MODE" = "publish" ] && [ "$BUILD" != "success" ]; then
+            # Build failed: the article goes to review instead, as a draft.
+            sed -i 's/^draft: false$/draft: true/' "src/content/blog/$SLUG.md"
+            printf '\n**Build de production en échec avec cet article : envoyé en relecture.**\n' >> research/daily-summary.md
+            MODE=review
+          fi
+          echo "mode=$MODE" >> "$GITHUB_OUTPUT"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: daily-article
+          path: |
+            website/src/content/blog/
+            website/research/
+            !website/research/cache/
+          retention-days: 7
+
+  publish:
+    needs: write
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      MODE: ${{ needs.write.outputs.mode }}
+      SLUG: ${{ needs.write.outputs.slug }}
+      TITLE: ${{ needs.write.outputs.title }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: daily-article
+          path: website
+      - name: Commit or open the review pull request
+        run: |
+          git config user.name "seo-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          today=$(TZ=Africa/Casablanca date +%F)
+          if [ "$MODE" = "review" ]; then
+            branch="seo/$today-$SLUG"
+            git switch -c "$branch"
+            git add website/src/content/blog website/research
+            git commit -m "Article à relire : $TITLE"
+            git push origin "$branch"
+            gh label create needs-review --color D93F0B --description "Article automatique à relire" --force
+            gh pr create --title "Article à relire : $TITLE" --body-file website/research/daily-summary.md --label needs-review --base "${{ github.event.repository.default_branch }}"
+            # Research data (keywords, costs, log) still goes to the default branch.
+            git switch "${{ github.event.repository.default_branch }}"
+            git checkout "$branch" -- website/research
+          fi
+          git add website/research
+          [ "$MODE" = "publish" ] && git add "website/src/content/blog/$SLUG.md"
+          if ! git diff --cached --quiet; then
+            msg="Recherche SEO du $today"
+            [ "$MODE" = "publish" ] && msg="Article du jour : $TITLE"
+            git commit -m "$msg"
+            git push origin HEAD
+          fi
+      - name: Daily summary
+        run: |
+          number=$(gh issue list --label seo-daily --state open --json number --jq '.[0].number')
+          if [ -z "$number" ]; then
+            gh label create seo-daily --color 0E8A16 --description "Résumé SEO quotidien" --force
+            number=$(gh issue create --title "Résumé SEO quotidien" --label seo-daily --body "Un commentaire par jour : article publié, envoyé en relecture ou jour sans publication." | grep -o '[0-9]*$')
+          fi
+          gh issue comment "$number" --body-file website/research/daily-summary.md

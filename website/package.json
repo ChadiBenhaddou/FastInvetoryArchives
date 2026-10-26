@@ -1,0 +1,40 @@
+{
+  "name": "inventaire-archives-website",
+  "private": true,
+  "type": "module",
+  "description": "Site vitrine et SEO de « Inventaire rapide des archives » — projet séparé de l'application hors ligne",
+  "engines": {
+    "node": ">=22.23.4"
+  },
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "build:pages": "astro build && node scripts/check-site.mjs",
+    "preview": "astro preview",
+    "check:site": "node scripts/check-site.mjs",
+    "test": "vitest run",
+    "seo:research": "node scripts/seo/research.mjs",
+    "seo:plan": "node scripts/seo/plan.mjs",
+    "seo:article": "node scripts/seo/daily-article.mjs",
+    "seo:gate": "node scripts/seo/quality-gate.mjs",
+    "seo:unpublish": "node scripts/seo/unpublish.mjs",
+    "seo:import": "node scripts/seo/import-csv.mjs",
+    "dashboard:build": "node dashboard/build.mjs"
+  },
+  "dependencies": {
+    "@astrojs/sitemap": "3.7.4",
+    "@fontsource-variable/noto-sans": "5.3.0",
+    "@fontsource-variable/noto-sans-arabic": "5.3.0",
+    "@tailwindcss/vite": "4.3.3",
+    "astro": "7.4.2",
+    "tailwindcss": "4.3.3"
+  },
+  "devDependencies": {
+    "@anthropic-ai/sdk": "1.3.0",
+    "@cloudflare/workers-types": "5.20261026.1",
+    "playwright": "1.64.1",
+    "vitest": "5.0.5",
+    "wrangler": "4.153.0",
+    "yaml": "2.9.1"
+  }
+}

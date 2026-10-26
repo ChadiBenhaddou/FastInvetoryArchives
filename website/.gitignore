@@ -1,0 +1,9 @@
+node_modules/
+dist/
+dashboard/dist/
+.astro/
+.wrangler/
+.env
+.dev.vars
+research/cache/
+research/keywords.dry.json

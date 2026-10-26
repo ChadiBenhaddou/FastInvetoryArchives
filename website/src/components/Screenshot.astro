@@ -1,0 +1,17 @@
+---
+// Real product screenshot (sample data only), optimised to WebP at several widths.
+import { Picture } from 'astro:assets';
+import type { ImageMetadata } from 'astro';
+
+interface Props { src: ImageMetadata; alt: string; caption?: string; kind?: 'desktop' | 'mobile'; eager?: boolean }
+const { src, alt, caption, kind = 'desktop', eager = false } = Astro.props;
+const widths = kind === 'mobile' ? [240, 412, 824] : [480, 960, 1440];
+const sizes = kind === 'mobile' ? '(min-width: 640px) 260px, 70vw' : '(min-width: 1024px) 720px, 100vw';
+---
+
+<figure class:list={[kind === 'mobile' ? 'mx-auto w-full max-w-[260px]' : 'w-full']}>
+    <div class:list={['overflow-hidden bg-white shadow-lg ring-1 ring-stone-200', kind === 'mobile' ? 'rounded-[1.75rem] border-[6px] border-ink' : 'rounded-xl']}>
+        <Picture src={src} alt={alt} widths={widths} sizes={sizes} formats={['avif', 'webp']} loading={eager ? 'eager' : 'lazy'} class="h-auto w-full" />
+    </div>
+    {caption && <figcaption class="mt-3 text-center text-sm text-stone-500">{caption}</figcaption>}
+</figure>

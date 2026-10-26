@@ -1,0 +1,16 @@
+---
+import Base from '../layouts/Base.astro';
+---
+
+<Base title="Page introuvable" description="Cette page n'existe pas ou a été déplacée." noindex>
+    <div class="mx-auto max-w-2xl py-10 text-center">
+        <p class="text-6xl font-bold text-brand-600">404</p>
+        <h1 class="mt-4 text-3xl font-bold text-ink">Page introuvable</h1>
+        <p class="mt-4 text-lg text-stone-600">Cette page n’existe pas ou a été déplacée.</p>
+        <ul class="mt-8 flex flex-wrap justify-center gap-3">
+            <li><a href="/" class="rounded-md bg-brand-600 px-5 py-3 font-semibold text-white hover:bg-brand-700">Accueil</a></li>
+            <li><a href="/logiciel-inventaire-archives/" class="rounded-md border border-stone-300 px-5 py-3 font-semibold text-ink hover:bg-white">Le logiciel</a></li>
+            <li><a href="/blog/" class="rounded-md border border-stone-300 px-5 py-3 font-semibold text-ink hover:bg-white">Guides et articles</a></li>
+        </ul>
+    </div>
+</Base>

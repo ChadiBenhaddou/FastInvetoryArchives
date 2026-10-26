@@ -1,0 +1,69 @@
+---
+import Page from '../../layouts/Page.astro';
+import Screenshot from '../../components/Screenshot.astro';
+import { PRODUCT_PAGES } from '../../config/nav.mjs';
+import accueil from '../../assets/screenshots/mobile/02-accueil.png';
+import code from '../../assets/screenshots/mobile/03-code-genere.png';
+import capture from '../../assets/screenshots/mobile/04-prise-de-vue.png';
+import boite from '../../assets/screenshots/mobile/06-boite-en-cours.png';
+import exporter from '../../assets/screenshots/mobile/08-export.png';
+import arabe from '../../assets/screenshots/mobile/09-accueil-arabe.png';
+---
+
+<Page
+    title="Capture des archives sur téléphone Android, hors ligne"
+    h1="Capture sur téléphone Android"
+    description="Application Android de capture d'archives : code de boîte à lettre de contrôle, contrôle de netteté immédiat, export ZIP, mode avion, arabe et français."
+    lead="Des téléphones Android ordinaires, en mode avion, deviennent des postes de saisie : un code fiable pour chaque boîte, une photo nette de chaque dossier, un seul fichier à transférer en fin de session."
+    breadcrumbs={[{ name: 'Accueil', href: '/' }, { name: 'Le logiciel', href: '/logiciel-inventaire-archives/' }, { name: 'Capture Android', href: '/logiciel-inventaire-archives/capture-android/' }]}
+    offer="inventaire"
+    siblings={PRODUCT_PAGES}
+    siblingsTitle="Le logiciel en détail"
+>
+    <h2>Un code unique pour chaque boîte</h2>
+    <p>
+        Chaque téléphone reçoit une lettre (A, K…) enregistrée sur le PC. À chaque nouvelle boîte, il donne un code de la forme
+        <code>LETTRE-NUMÉRO-CONTRÔLE</code>, par exemple <code>K-0001-A</code>. L’agent l’écrit au marqueur, en grandes lettres,
+        sur deux côtés de la boîte.
+    </p>
+    <p>
+        La dernière lettre est une <strong>lettre de contrôle</strong> calculée à partir des autres. Elle détecte toute erreur de
+        recopie d’un seul chiffre, l’inversion de deux chiffres voisins, une mauvaise lettre d’appareil ou une mauvaise lettre de
+        contrôle. Les lettres O, I, S, B et Z ne sont jamais utilisées, pour ne pas être confondues avec 0, 1, 5, 8 et 2.
+    </p>
+    <div class="not-prose my-8 grid gap-6 sm:grid-cols-3">
+        <Screenshot src={accueil} alt="Écran d’accueil de l’application de capture" kind="mobile" caption="Accueil" />
+        <Screenshot src={code} alt="Code de boîte à écrire au marqueur" kind="mobile" caption="Le code à écrire sur la boîte" />
+        <Screenshot src={capture} alt="Prise de vue d’une page de dossier" kind="mobile" caption="Prise de vue" />
+    </div>
+
+    <h2>Une photo nette, contrôlée tout de suite</h2>
+    <ol>
+        <li>L’agent photographie d’abord <strong>le code écrit sur la boîte</strong> : le PC le montrera à côté du code enregistré.</li>
+        <li>Puis la <strong>couverture ou la première page de chaque dossier</strong>, à plat, à 30-40 cm.</li>
+        <li>Chaque photo est contrôlée immédiatement. « Photo floue » ou « Photo trop sombre » : l’agent la reprend, éventuellement avec la lampe du téléphone.</li>
+        <li>Les pages sont recadrées automatiquement. Quand le contour du document n’est pas sûr, la photo est gardée entière plutôt que mal coupée.</li>
+    </ol>
+    <p>L’emplacement de la boîte (salle, étagère, rangée) est facultatif. Une boîte mal commencée peut être annulée : le PC est informé que ce numéro est annulé et ne le signalera pas comme manquant.</p>
+
+    <h2>Un seul fichier par session</h2>
+    <p>
+        En fin de session, le téléphone crée <strong>un fichier ZIP</strong> contenant toutes les boîtes fermées et pas encore
+        exportées. Il est copié sur le PC par câble USB. Les photos ne sont effacées du téléphone qu’après que l’agent a confirmé
+        l’import réussi sur le PC : en cas de problème, l’export peut être refait.
+    </p>
+    <div class="not-prose my-8 grid gap-6 sm:grid-cols-3">
+        <Screenshot src={boite} alt="Boîte en cours avec le nombre de photos" kind="mobile" caption="Boîte en cours" />
+        <Screenshot src={exporter} alt="Écran d’export du fichier ZIP" kind="mobile" caption="Export de la session" />
+        <Screenshot src={arabe} alt="Écran d’accueil en arabe, de droite à gauche" kind="mobile" caption="Interface en arabe" />
+    </div>
+
+    <h2>Pensé pour le terrain</h2>
+    <ul>
+        <li><strong>Mode avion</strong> en permanence : l’application n’utilise ni le réseau, ni la localisation, ni aucun compte.</li>
+        <li>Interface en <strong>français ou en arabe</strong>, au choix de l’agent.</li>
+        <li>Réglages du téléphone protégés par un <strong>code PIN</strong> administrateur, généré sur le PC.</li>
+        <li>Plusieurs téléphones en parallèle : une lettre par appareil, donc jamais deux fois le même code.</li>
+        <li>Téléphones Android 7 ou plus récents avec mise au point automatique ; l’application s’installe par câble, sans magasin d’applications.</li>
+    </ul>
+</Page>

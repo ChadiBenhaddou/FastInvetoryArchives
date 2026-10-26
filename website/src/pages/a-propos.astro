@@ -1,0 +1,33 @@
+---
+import Page from '../layouts/Page.astro';
+import { site } from '../config/site.mjs';
+---
+
+<Page
+    title="À propos : l'équipe derrière l'inventaire rapide des archives"
+    h1="À propos"
+    description="Qui conçoit le logiciel d'inventaire des archives hors ligne et les applications sur mesure, et selon quels principes : données chez le client, limites dites."
+    lead={`${site.orgName} conçoit le logiciel « ${site.productName} » et développe des applications sur mesure pour les organisations qui veulent garder la maîtrise de leurs documents.`}
+    breadcrumbs={[{ name: 'Accueil', href: '/' }, { name: 'À propos', href: '/a-propos/' }]}
+>
+    <h2>Ce que nous avons construit</h2>
+    <p>
+        Un système complet d’inventaire des archives papier : une application Android qui photographie et code chaque boîte, et
+        un logiciel pour PC qui lit les documents en arabe et en français, construit l’inventaire et permet de le chercher.
+        L’ensemble fonctionne sans Internet, s’installe depuis une clé USB et se vérifie réseau coupé.
+    </p>
+
+    <h2>Nos principes</h2>
+    <ul>
+        <li><strong>Les données restent chez le client.</strong> Pas de compte, pas de nuage, pas de statistiques envoyées, IA comprise.</li>
+        <li><strong>Dire les limites.</strong> Un document manuscrit est mal lu : nous le disons, et le logiciel le signale.</li>
+        <li><strong>Des chiffres avec leurs conditions.</strong> Une vitesse n’a de sens qu’avec le PC et le moteur qui l’ont donnée.</li>
+        <li><strong>Mesurer sur vos documents.</strong> Un pilote sur vos boîtes vaut mieux que toute promesse.</li>
+    </ul>
+
+    <h2>Nous contacter</h2>
+    <p>
+        Par e-mail à <a href={`mailto:${site.email}`}>{site.email}</a>{site.city && <>, depuis {site.city}</>}, ou par le
+        <a href="/contact/">formulaire de contact</a>.
+    </p>
+</Page>
