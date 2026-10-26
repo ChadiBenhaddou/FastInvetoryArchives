@@ -85,7 +85,7 @@ deployment configuration, then validate the production build.
 - **Cloudflare Pages** for hosting (build `npm run build` in `website/`, output `website/dist`). Configure the Pages
   project root to `website/` so the rest of the monorepo is ignored.
 - **Pages Functions / Workers** only where server-side code is needed (lead form, private dashboard API).
-- **GitHub Actions** for scheduled keyword research, brief/draft generation and approved publishing. Path filters so
+- **GitHub Actions** for scheduled keyword research, article generation and **automatic daily publishing**. Path filters so
   website workflows never run the app's CI, and vice versa.
 - **DataForSEO** for real keyword and SERP data; **OpenSEO** reused where verified compatible.
 - Storage: version-controlled JSON/CSV in `website/research/` for the first phase; Cloudflare D1 (or KV/R2) only if the
@@ -228,13 +228,38 @@ uncovered keywords, cannibalisation detection, primary/secondary keywords, brief
 approved → published → updated). Protect it with real authentication (e.g. Cloudflare Access), validate requests
 server-side, authorise publishing operations, rate-limit, never expose API keys. A secret URL is not authentication.
 
-## 12. Daily article workflow
+## 12. Daily article workflow — automatic publication
 
-Target: one useful article per day — skip when no valuable opportunity exists.
+**Publication is automatic by default.** Every day a GitHub Actions workflow researches, writes and publishes one
+article with no human action needed. Skip the day when no valuable opportunity exists — never publish filler.
+
 Research → compare with existing keywords and articles → pick a topic with real demand and business relevance →
-brief → French draft → validate facts, metadata, links, structure → duplicate/cannibalisation check → save as
-Markdown with `draft: true` → open a pull request for editorial review → publish only after approval (merge) →
-Cloudflare Pages redeploys → record URL, keyword, date.
+brief → French article → **automated quality gate** (below) → commit the Markdown directly to the default branch with
+`draft: false` → Cloudflare Pages redeploys → record URL, keyword, date and gate results in a publication log
+(`website/research/publications.json`) → send the owner a daily summary (email or GitHub issue) with a link to the
+new article.
+
+**Automated quality gate** — the article is published only if every check passes:
+- frontmatter schema valid, slug unique, title and description within length limits;
+- no topic duplicate or keyword cannibalisation with an existing page (similarity check on titles, primary keywords and
+  content);
+- minimum useful length and a clear heading structure; no repeated paragraphs or keyword stuffing;
+- every internal link resolves; at least 2 relevant internal links and one contextual CTA;
+- every external source URL responds and belongs to an allow-list of reliable domains for regulatory claims
+  (e.g. Archives du Maroc, sgg.gov.ma / Bulletin officiel, CNDP);
+- a second, independent AI pass reviews the article for factual errors, invented figures or quotations, unsupported
+  legal statements and product claims missing from `FEATURES-VERIFIED.md`, and returns pass/fail with reasons;
+- production build succeeds with the new article.
+
+If the gate fails, retry generation once; if it fails again, do not publish — save the article as `draft: true` in a
+pull request labelled `needs-review` and mention it in the daily summary. Articles whose main subject is Moroccan law,
+legal obligations or official retention periods always go through this review pull request instead of being published
+automatically.
+
+Owner controls (environment variables / repository variables): `AUTO_PUBLISH=true` (default; `false` switches every
+article to the pull-request review path), `MAX_ARTICLES_PER_DAY=1`, `PUBLISH_HOUR` (Morocco time), and a one-click
+**unpublish** workflow that sets an article back to draft and redeploys. Every published article stays editable later
+(`updatedDate` set on changes).
 
 Frontmatter: `title`, `description`, `slug`, `pubDate`, `updatedDate`, `author`, `category`, `tags`, `primaryKeyword`,
 `secondaryKeywords`, `offer` (`inventaire` | `sur-mesure`), `draft`, `sources`, `canonicalURL` when needed. Validated at
@@ -244,7 +269,7 @@ Quality rules: clear intent, practical value, natural French, logical headings, 
 for factual and regulatory claims (Archives du Maroc, Bulletin officiel, CNDP — verify current texts), facts separated
 from recommendations, no legal advice presented as authoritative, no fabricated statistics or quotations, no keyword
 stuffing. Product mentions must match `FEATURES-VERIFIED.md`; custom-development mentions must be framed as services
-on request. Default is human approval; auto-publication only as an explicit, logged, opt-in setting.
+on request.
 
 ## 13. Editorial calendar — first 12–20 articles
 
@@ -299,9 +324,10 @@ graceful provider outages. Never run a large paid batch without an estimate.
 Git-based deployment from this repo with root directory `website/`; production and preview environments (previews
 `noindex`); build command and output; environment variables; custom domain and HTTPS; sitemap, robots, redirects, 404;
 troubleshooting. Cloudflare Pages does not run cron jobs: scheduled research runs in GitHub Actions (or a Worker Cron
-Trigger if justified). Separate clearly: static build → scheduled research → AI drafting → editorial approval (PR) →
-merge and redeploy. Give workflows the minimum permissions (`contents: write` and `pull-requests: write` only on the
-drafting job).
+Trigger if justified). Separate clearly: static build → scheduled research → AI writing → automated quality gate →
+automatic commit and redeploy (or review PR on failure). Give workflows the minimum permissions (`contents: write` and
+`pull-requests: write` only on the publishing job), and protect the AI and DataForSEO secrets with a GitHub
+environment.
 
 ## 18. Testing
 
@@ -310,8 +336,10 @@ drafting job).
 - Content: frontmatter schema, unique slugs, valid dates, resolvable links, duplicate detection, claims cross-checked
   against `FEATURES-VERIFIED.md`.
 - Integrations: secure credential loading, one small real DataForSEO request (manual, not in CI), mocked responses in
-  CI, error handling, cache, budget stop, OpenSEO per its documented capabilities, valid draft generation, approval
-  required, merge triggers deployment.
+  CI, error handling, cache, budget stop, OpenSEO per its documented capabilities, valid article generation, quality
+  gate blocks a bad article (tests with deliberately broken fixtures: duplicate topic, dead link, invented statistic),
+  passing article is committed and triggers deployment, failing article opens a review PR, `AUTO_PUBLISH=false` and
+  the unpublish workflow work.
 - **Regression: the existing app's tests and builds (`backend`, `mobile`, `ocr-worker`, `windows-ocr`, `bundle`) are
   unaffected** — run them or at minimum confirm no file outside `website/`, `.github/workflows/website-*` and root
   docs changed.
@@ -324,7 +352,8 @@ drafting job).
    first 5–8 well-sourced articles, working lead form.
 3. **Keyword research** — OpenSEO verification, DataForSEO integration, secure config, caching and budget, keyword
    store, private dashboard.
-4. **Content automation** — editorial calendar, briefs, French drafts, validation, PR-based approval, scheduled runs.
+4. **Content automation** — editorial calendar, briefs, French articles, quality gate, automatic daily publication,
+   review PR fallback, daily summary, unpublish workflow.
 5. **Optimisation** — monitoring, Search Console, conversion improvements, Arabic version, priorities refined by real data.
 
 A working Phase 1–2 beats an unfinished everything.
@@ -344,8 +373,9 @@ DataForSEO account, email provider, Turnstile keys, Search Console, AI provider 
 - Every product claim is traceable to the code; the custom-development offer is presented honestly as a service.
 - Technical SEO checks pass; drafts, dashboard and credentials never reach public output.
 - OpenSEO capabilities are verified; DataForSEO returns real data with secure credentials, cached and budget-limited.
-- Briefs and valid French drafts are produced; scheduled research runs independently of the site; publication requires
-  approval.
+- One French article per day is researched, written, checked and published automatically, independently of the site;
+  articles that fail the quality gate or deal with legal topics go to a review PR instead; the owner receives a daily
+  summary and can unpublish in one click.
 - Lead submissions (demo and custom project) reach a real destination.
 - Setup and deployment instructions are complete.
 
