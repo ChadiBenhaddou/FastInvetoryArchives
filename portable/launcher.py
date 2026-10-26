@@ -31,6 +31,7 @@ import base64
 import ctypes
 import datetime
 import gzip
+import ipaddress
 import json
 import msvcrt
 import os
@@ -87,6 +88,7 @@ DEFAULTS = {
     "WINDOWS_OCR_ENGINES": "2",
     "LOG_LEVEL": "info",
     "OPEN_BROWSER": "1",
+    "PC_AUTORISES": "",
 }
 SETTINGS_HELP = """\
 # Paramètres de l'Inventaire des archives (mode portable, sans Docker).
@@ -100,6 +102,9 @@ SETTINGS_HELP = """\
 # OCR_PROCESSES      processus PaddleOCR (~1 Go de mémoire chacun)
 # OPEN_BROWSER       1 = ouvrir le navigateur au démarrage
 # PC_NAME            nom de ce PC dans les messages de synchronisation (par défaut : le nom Windows)
+# PC_AUTORISES       autres PC du réseau local qui peuvent ouvrir l'application, par adresse IP, séparés
+#                    par des virgules (192.168.1.11, 192.168.1.12) ou une plage (192.168.1.0/24).
+#                    Vide = ce PC seulement. Après un changement : Autoriser-reseau.bat (administrateur).
 #
 # Les clés secrètes ne sont pas ici mais dans donnees\\cles.env (elles suivent les données d'un PC à l'autre).
 """
@@ -213,9 +218,52 @@ def http_port(cfg) -> int:
     return int(cfg["HTTP_PORT"])
 
 
-def app_url(cfg) -> str:
+def app_url(cfg, host: str = "localhost") -> str:
     port = http_port(cfg)
-    return "http://localhost" + ("" if port == 80 else f":{port}")
+    return f"http://{host}" + ("" if port == 80 else f":{port}")
+
+
+def allowed_pcs(cfg) -> list[str]:
+    """PC_AUTORISES: addresses (192.168.1.11) or ranges (192.168.1.0/24) of the local network that
+    may open the application. Empty: this PC only. Checked here: they go into nginx.conf."""
+    allowed = []
+    for item in re.split(r"[,;\s]+", cfg.get("PC_AUTORISES", "").strip()):
+        if not item:
+            continue
+        try:
+            network = ipaddress.ip_network(item, strict=False)
+        except ValueError:
+            raise Abort(f"PC_AUTORISES dans parametres.env : « {item} » n'est pas une adresse IP (exemple : 192.168.1.11).")
+        if network.version != 4 or network.is_global:
+            raise Abort(f"PC_AUTORISES : « {item} » n'est pas une adresse du réseau local (exemple : 192.168.1.11).")
+        if network.prefixlen < 16:
+            raise Abort(f"PC_AUTORISES : « {item} » couvre trop d'adresses (au plus une plage /16).")
+        allowed.append(str(network) if network.prefixlen < 32 else str(network.network_address))
+    return allowed
+
+
+def lan_addresses() -> list[str]:
+    """This PC's IPv4 addresses on the local network: what the other PCs type."""
+    try:
+        found = socket.gethostbyname_ex(socket.gethostname())[2]
+    except OSError:
+        return []
+    return sorted({a for a in found if not a.startswith(("127.", "169.254."))})
+
+
+FIREWALL_RULE = "Inventaire des archives (reseau local)"
+FIREWALL_STATE = SYSTEM / "pare-feu.txt"  # what the rule was made for: port + allowed PCs
+
+
+def firewall_wanted(cfg) -> str:
+    return f"{http_port(cfg)} {','.join(allowed_pcs(cfg))}"
+
+
+def firewall_ok(cfg) -> bool:
+    exists = subprocess.run(["netsh", "advfirewall", "firewall", "show", "rule", f"name={FIREWALL_RULE}"],
+                            capture_output=True, creationflags=CREATE_NO_WINDOW).returncode == 0
+    applied = FIREWALL_STATE.read_text(encoding="utf-8").strip() if FIREWALL_STATE.exists() else ""
+    return exists and applied == firewall_wanted(cfg)
 
 
 def php_env(cfg) -> dict:
@@ -358,8 +406,12 @@ def write_nginx_conf(cfg):
     for sub in ("logs", "temp"):
         (conf_dir / sub).mkdir(parents=True, exist_ok=True)
     upstream = "\n".join(f"        server 127.0.0.1:{PHP_FIRST_PORT + i};" for i in range(workers))
+    allowed = allowed_pcs(cfg)
+    access = "".join(f"        allow {a};\n" for a in ["127.0.0.1", *allowed]) + "        deny all;" if allowed else ""
     template = (HERE / "conf" / "nginx.conf").read_text(encoding="utf-8")
     text = (template.replace("@PORT@", str(http_port(cfg)))
+            .replace("@LISTEN@", "0.0.0.0" if allowed else "127.0.0.1")
+            .replace("@ACCESS@", access)
             .replace("@NGINX@", posix(NGINX_DIR))
             .replace("@PUBLIC@", posix(BACKEND / "public"))
             .replace("@UPSTREAM@", upstream))
@@ -723,6 +775,12 @@ def start(args):
         raise Abort(f"Port(s) déjà utilisé(s) sur ce PC : {', '.join(map(str, busy))}{hint}")
     free = shutil.disk_usage(ROOT).free
     (ok if free > 5 * 1024**3 else warn)(f"Espace libre : {free / 1024**3:.1f} Go")
+    allowed = allowed_pcs(cfg)
+    if allowed:
+        ok(f"Réseau local : ouvert aux PC {', '.join(allowed)} seulement")
+        if not firewall_ok(cfg):
+            warn("Le pare-feu de Windows n'est pas réglé pour ces PC : double-cliquer Autoriser-reseau.bat "
+                 "(droits d'administrateur), sinon ils ne pourront pas se connecter.")
 
     windows_ocr = "none"
     if cfg["OCR_ENGINE"] == "windows":
@@ -790,6 +848,9 @@ def start(args):
         if cfg.get("OPEN_BROWSER", "1") == "1" and not args.no_browser:
             os.startfile(app_url(cfg))
         print(f"\nL'application est prête : {app_url(cfg)}  (identifiant : admin)")
+        if allowed:
+            addresses = " ou ".join(app_url(cfg, a) for a in lan_addresses()) or "(adresse de ce PC introuvable)"
+            print(f"Sur les autres PC autorisés : {addresses}")
         print("NE PAS FERMER CETTE FENÊTRE. Pour arrêter : Arreter.bat, ou Ctrl+C ici.\n", flush=True)
         log_line(f"démarré ({len(services)} processus)")
         supervise(cfg, services, windows_ocr)
@@ -1142,6 +1203,38 @@ def receive(args):
     return 0
 
 
+def firewall(args):
+    """Windows Firewall rule for PC_AUTORISES: the web port, for nginx, from those addresses only.
+    Needs an administrator: asks for the rights (UAC) and does it in an elevated window."""
+    cfg = prepared_cfg()
+    if not ctypes.windll.shell32.IsUserAnAdmin():
+        params = subprocess.list2cmdline(["-X", "utf8", str(Path(__file__).resolve()), "pare-feu", "--pause"])
+        if ctypes.windll.shell32.ShellExecuteW(None, "runas", sys.executable, params, str(ROOT), 1) <= 32:
+            raise Abort("Droits d'administrateur refusés : le pare-feu n'a pas été réglé.")
+        print("Le réglage du pare-feu continue dans la fenêtre administrateur qui s'ouvre.")
+        return 0
+    allowed = allowed_pcs(cfg)
+    subprocess.run(["netsh", "advfirewall", "firewall", "delete", "rule", f"name={FIREWALL_RULE}"], capture_output=True)
+    if allowed:
+        # profile=any: a closed office network is often "unidentified", hence "public" for Windows.
+        added = subprocess.run(["netsh", "advfirewall", "firewall", "add", "rule", f"name={FIREWALL_RULE}", "dir=in",
+                                "action=allow", "protocol=TCP", f"localport={http_port(cfg)}", f"remoteip={','.join(allowed)}",
+                                f"program={NGINX_DIR / 'nginx.exe'}", "profile=any", "enable=yes"],
+                               capture_output=True, text=True, errors="replace")
+        if added.returncode != 0:
+            raise Abort(f"Règle du pare-feu impossible : {(added.stdout + added.stderr).strip()}")
+        FIREWALL_STATE.write_text(firewall_wanted(cfg) + "\n", encoding="utf-8")
+        ok(f"Pare-feu : port {http_port(cfg)} ouvert pour {', '.join(allowed)} seulement")
+        print(f"   Sur ces PC, ouvrir : {' ou '.join(app_url(cfg, a) for a in lan_addresses()) or app_url(cfg, '<adresse de ce PC>')}")
+    else:
+        FIREWALL_STATE.unlink(missing_ok=True)
+        ok("Pare-feu : règle retirée (PC_AUTORISES est vide : application sur ce PC seulement)")
+    print("   Arreter.bat puis Demarrer.bat si l'application tournait.")
+    if args.pause:
+        input("\nEntrée pour fermer")
+    return 0
+
+
 def verify(args):
     cfg = prepared_cfg()
     if not launcher_running():
@@ -1178,6 +1271,8 @@ def main():
     p.add_argument("--yes", action="store_true")
     p = sub.add_parser("verifier")
     p.add_argument("--timeout", type=int, default=1800)
+    p = sub.add_parser("pare-feu")
+    p.add_argument("--pause", action="store_true")
     p = sub.add_parser("envoyer")
     p.add_argument("destination", nargs="?")
     p = sub.add_parser("recevoir")
@@ -1189,7 +1284,7 @@ def main():
     if args.command is None:
         args = parser.parse_args(["demarrer", *sys.argv[1:]])
     handler = {"demarrer": start, "arreter": stop, "etat": status, "admin": admin, "sauvegarde": backup,
-               "restauration": restore, "verifier": verify, "envoyer": send, "recevoir": receive,
+               "restauration": restore, "verifier": verify, "envoyer": send, "recevoir": receive, "pare-feu": firewall,
                "artisan": run_artisan}[args.command]
     try:
         return handler(args)

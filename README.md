@@ -238,6 +238,7 @@ fermer arrête l'application. Un programme qui s'arrête est redémarré tout se
 | `Restaurer.bat E:\ArchiveInventory-Sauvegarde` | restauration, application arrêtée (§ 10) |
 | `Verifier.bat` | vérification complète avec un export d'exemple (§ 6), application démarrée |
 | `Envoyer-donnees.bat` / `Recevoir-donnees.bat` | passer les données à un autre PC (§ 4.6) |
+| `Autoriser-reseau.bat` | ouvrir l'application aux autres PC du réseau local listés dans `PC_AUTORISES` (§ 4.7) |
 | `donnees\` | **les données** : `base\archive.sqlite`, `photos\<boîte>\`, `recherche\`, `cles.env` — ne pas modifier |
 | `parametres.env` | réglages **de ce PC** (port, nombre de lectures en parallèle, `PC_NAME`…), créé au premier démarrage |
 | `systeme\` | ce qui est propre à ce PC : journaux (`systeme\journaux\`), fichiers de l'OCR Windows, caches |
@@ -246,7 +247,7 @@ Pour démarrer avec la session Windows : clic droit sur `Demarrer.bat` → *Cré
 raccourci dans le dossier qui s'ouvre avec **Win+R** → `shell:startup`.
 
 **Différences avec Docker** : pas d'isolement réseau des programmes (ils n'écoutent que sur le PC lui-même,
-127.0.0.1, jamais sur le réseau local) ; pas de Tesseract (troisième OCR de secours) ; l'IA locale (§ 13) n'est pas
+127.0.0.1 ; seule la page web peut être ouverte aux PC listés du réseau local, § 4.7) ; pas de Tesseract (troisième OCR de secours) ; l'IA locale (§ 13) n'est pas
 disponible. Si le port 80 est déjà pris (par exemple par l'application Docker), mettre `HTTP_PORT=8080` dans `parametres.env`.
 
 **Mise à jour** : `Arreter.bat`, remplacer les dossiers `app\` et `runtime\` et les fichiers `.bat` par ceux de la
@@ -255,7 +256,10 @@ est mise à jour automatiquement). Faire une sauvegarde USB avant. Mettre à jou
 
 ### 4.6 Deux PC : passer les données de l'un à l'autre
 
-Pour des PC utilisés **l'un après l'autre** (on travaille sur le PC 1, puis on continue sur le PC 2) : les données
+> Si les PC sont reliés par un **réseau local**, préférer le § 4.7 : un seul PC garde les données, les autres
+> ouvrent l'application dans leur navigateur. Rien à copier, tout le monde travaille en même temps.
+
+Pour des PC **sans réseau entre eux**, utilisés **l'un après l'autre** (on travaille sur le PC 1, puis on continue sur le PC 2) : les données
 du PC qui a travaillé en dernier **remplacent** celles de l'autre. Ce n'est pas une fusion : si les deux PC
 travaillent en même temps, le travail de celui qui reçoit est perdu (l'application prévient, voir plus bas).
 
@@ -287,6 +291,42 @@ ses réglages (`parametres.env`) et ses fichiers d'OCR Windows. Donner un nom à
 
 > Le dossier `donnees` contient **toutes les données confidentielles** : la clé qui le transporte se range sous clé
 > comme une sauvegarde (§ 10), et s'efface ou se chiffre (BitLocker To Go) après usage.
+
+### 4.7 Plusieurs PC sur le réseau local (conseillé)
+
+Un PC **serveur** a l'application et les données (installé comme au § 4.5). Les autres PC n'installent **rien** :
+ils ouvrent l'application dans leur navigateur, par l'adresse du serveur. Tout le monde travaille **en même
+temps** sur les **mêmes données** : pas de copie, pas de risque d'écraser le travail d'un autre.
+
+**À faire une fois, sur le serveur :**
+
+1. Noter l'adresse IP de chaque PC qui doit avoir accès (sur ce PC : touche Windows → `cmd` → `ipconfig` →
+   ligne *Adresse IPv4*, par exemple `192.168.1.11`). Lui donner une **adresse fixe** (réglage de la carte réseau
+   ou du routeur), sinon elle peut changer et l'accès sera refusé.
+2. Dans `C:\ArchiveInventory\parametres.env`, ligne `PC_AUTORISES=` : les adresses séparées par des virgules,
+   par exemple `PC_AUTORISES=192.168.1.11, 192.168.1.12` (ou une plage : `192.168.1.0/24`).
+3. Double-clic sur **`Autoriser-reseau.bat`** et accepter la demande d'administrateur : il ouvre le pare-feu de
+   Windows pour ces adresses seulement. Le refaire après chaque changement de `PC_AUTORISES` ou de `HTTP_PORT`.
+4. `Arreter.bat` puis `Demarrer.bat`. La fenêtre affiche l'adresse à taper sur les autres PC, par exemple
+   **`http://192.168.1.10`**.
+
+**Sur chaque autre PC :** ouvrir le navigateur à cette adresse (l'ajouter aux favoris) et se connecter avec son
+compte (§ 9). Le dossier surveillé `import\` est sur le serveur : depuis un autre PC, importer en glissant le
+ZIP sur la page **Import**.
+
+**Sécurité** — ce qui protège les données :
+
+- seules les adresses de `PC_AUTORISES` reçoivent une réponse, deux fois vérifiées : par le pare-feu de Windows et
+  par l'application (tout autre appareil reçoit « 403 Forbidden », avant même la page de connexion) ; puis il faut
+  un compte et son mot de passe ;
+- seule la page web est ouverte au réseau : la base, la recherche et l'OCR restent accessibles au serveur seul ;
+- les échanges ne sont pas chiffrés (`http`) : réservé à un **réseau fermé** (sans Internet, sans Wi-Fi
+  visiteurs). Ne pas mettre des adresses d'un réseau partagé ;
+- le serveur doit rester **allumé et démarré** pendant que les autres travaillent (`Demarrer.bat` au démarrage de
+  la session, § 4.5). Les sauvegardes (§ 10) se font sur le serveur.
+
+Pour revenir à « ce PC seulement » : vider `PC_AUTORISES`, `Autoriser-reseau.bat` (retire la règle du pare-feu),
+puis `Arreter.bat` / `Demarrer.bat`.
 
 ## 5. Installer le PC (Ubuntu)
 

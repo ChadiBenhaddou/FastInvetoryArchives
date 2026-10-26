@@ -140,7 +140,7 @@ surveille tous les processus, que `docker-compose.yml` fait tourner dans les con
 |---|---|
 | `mysql` | fichier SQLite `donnees\base\archive.sqlite` (WAL, transactions `IMMEDIATE` — appliquées par Laravel seulement avec PHP ≥ 8.4, d'où PHP 8.4 dans ce mode) ; sauvegarde par `VACUUM INTO` (`SqliteDumper`) |
 | `meilisearch` | `runtime\meilisearch\meilisearch.exe` sur 127.0.0.1:7771, index dans `donnees\recherche` |
-| `app` (nginx + php-fpm), `gateway` | `runtime\nginx` sur 127.0.0.1:`HTTP_PORT` + `PHP_WORKERS` processus `php-cgi` (127.0.0.1:9171…) |
+| `app` (nginx + php-fpm), `gateway` | `runtime\nginx` sur 127.0.0.1:`HTTP_PORT` (0.0.0.0 avec `allow`/`deny all` quand `PC_AUTORISES` liste des PC du réseau local ; règle de pare-feu limitée aux mêmes adresses par `launcher.py pare-feu`) + `PHP_WORKERS` processus `php-cgi` (127.0.0.1:9171…) |
 | `queue`, `pipeline`, `scheduler` | `php artisan queue:work` / `schedule:work` (`runtime\php`) |
 | `ocr-worker` | `uvicorn` de `ocr-worker/app` sur 127.0.0.1:8771 (sans Tesseract) |
 | OCR Windows (tâche planifiée) | `windows-ocr/ocr_service.py` sur 127.0.0.1:8010, lancé par le lanceur |
