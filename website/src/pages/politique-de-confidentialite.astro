@@ -2,73 +2,56 @@
 import Page from '../layouts/Page.astro';
 import { site } from '../config/site.mjs';
 
-// Retention of contact requests: an owner decision, to validate (see docs/CONFIGURATION-EXTERNE.md).
-const retention = process.env.PUBLIC_LEAD_RETENTION_MONTHS || '24';
-const updated = '26 octobre 2026';
+const updated = '27 octobre 2026';
 ---
 
 <Page
     title="Politique de confidentialité (loi 09-08)"
-    description="Quelles données ce site collecte, pourquoi, combien de temps, qui y a accès, et comment exercer vos droits d'accès, de rectification et d'opposition."
+    description="Ce site ne collecte aucune donnée personnelle : ni formulaire, ni cookie, ni traceur. Ce qui se passe quand vous nous contactez, et vos droits."
     breadcrumbs={[{ name: 'Accueil', href: '/' }, { name: 'Politique de confidentialité', href: '/politique-de-confidentialite/' }]}
     offer="inventaire"
 >
     <p>Dernière mise à jour : {updated}.</p>
 
-    <h2>Responsable du traitement</h2>
-    <p>{site.orgName}{site.address && <>, {site.address}</>}{site.city && <>, {site.city}</>}. Contact : <a href={`mailto:${site.email}`}>{site.email}</a>.</p>
-    {site.cndpReference
-        ? <p>Traitement déclaré auprès de la Commission nationale de contrôle de la protection des données à caractère personnel (CNDP) : {site.cndpReference}.</p>
-        : <p><strong>[À COMPLÉTER : référence de la déclaration ou de l’autorisation CNDP du traitement « demandes de contact »]</strong></p>}
-
-    <h2>Ce site ne vous suit pas</h2>
-    <p>
-        Ce site n’utilise ni cookie publicitaire, ni outil de suivi de tiers, ni réseau social intégré. Si une mesure d’audience
-        est activée, il s’agit de Cloudflare Web Analytics, sans cookie et sans profil individuel.
-    </p>
-
-    <h2>Données collectées par les formulaires</h2>
-    <p>Uniquement ce que vous saisissez dans le formulaire de contact ou de démonstration :</p>
+    <h2>Ce site ne collecte aucune donnée personnelle</h2>
     <ul>
-        <li>nom, e-mail professionnel, organisation, type d’organisation, ville, téléphone (facultatif) ;</li>
-        <li>la nature de votre demande et, selon elle, le volume d’archives, les langues des documents, la description du besoin, le délai et le budget indicatif (facultatif) ;</li>
-        <li>votre message, la date de la demande.</li>
+        <li>pas de formulaire, pas de compte, pas d’inscription ;</li>
+        <li>pas de cookie, ni publicitaire ni de mesure d’audience ;</li>
+        <li>pas d’outil de suivi de tiers ni de réseau social intégré.</li>
     </ul>
     <p>
-        Pour bloquer les envois automatisés, le formulaire utilise Cloudflare Turnstile, qui analyse des données techniques de
-        votre navigateur au moment de l’envoi. L’adresse IP sert aussi, temporairement, à limiter le nombre d’envois.
+        Si une mesure d’audience est activée, il s’agit de Cloudflare Web Analytics : sans cookie, sans profil individuel,
+        uniquement des totaux (pages vues, pays, type d’appareil).
     </p>
 
-    <h2>Pourquoi, et sur quelle base</h2>
+    <h2>Hébergement</h2>
     <p>
-        Ces données servent <strong>uniquement à répondre à votre demande</strong> (démonstration, devis, pilote ou projet sur
-        mesure) et au suivi de cette relation. Elles sont traitées avec votre <strong>consentement</strong>, donné en cochant la
-        case du formulaire. Elles ne sont ni vendues, ni louées, ni utilisées pour de la publicité.
+        Comme tout site, celui-ci est servi par un hébergeur, Cloudflare (voir les <a href="/mentions-legales/">mentions
+        légales</a>), qui traite des données techniques de connexion (adresse IP, navigateur) pour acheminer les pages et
+        protéger le site contre les attaques. Nous n’y avons pas accès sous une forme qui vous identifie.
     </p>
 
-    <h2>Qui y a accès</h2>
+    <h2>Quand vous nous contactez</h2>
     <p>
-        Les personnes de {site.orgName} chargées de vous répondre. Pour fonctionner, le site s’appuie sur des prestataires
-        techniques qui traitent ces données pour notre compte : Cloudflare (hébergement, stockage des demandes, Turnstile) et,
-        le cas échéant, le service d’envoi d’e-mails qui nous transmet votre demande. Ces prestataires peuvent héberger les données
-        hors du Maroc.
+        Si vous nous appelez, nous écrivez sur WhatsApp ou par e-mail, nous recevons ce que vous choisissez de nous envoyer
+        (votre nom, votre numéro ou votre adresse, votre message). Ces informations servent <strong>uniquement à vous
+        répondre</strong> et au suivi de votre demande ; elles ne sont ni vendues, ni louées, ni utilisées pour de la
+        publicité, et sont supprimées quand elles ne sont plus utiles à ce suivi. WhatsApp est un service de Meta, soumis à
+        ses propres conditions : si vous préférez, appelez-nous{site.email && <> ou écrivez par e-mail</>}.
     </p>
-    {process.env.PUBLIC_CNDP_TRANSFERS_VALIDATED !== 'true' && (
-        <p><strong>[À VALIDER : formalités CNDP liées au transfert de données vers l’étranger, selon les prestataires retenus]</strong></p>
-    )}
-
-    <h2>Combien de temps</h2>
-    <p>Les demandes sont conservées {retention} mois après le dernier échange, puis supprimées.</p>
 
     <h2>Vos droits</h2>
     <p>
         Conformément à la loi n° 09-08 relative à la protection des personnes physiques à l’égard du traitement des données à
         caractère personnel, vous pouvez accéder aux données vous concernant, les faire rectifier et vous opposer, pour des motifs
-        légitimes, à leur traitement. Écrivez à <a href={`mailto:${site.email}`}>{site.email}</a>. Vous pouvez aussi saisir la
-        CNDP (<a href="https://www.cndp.ma" rel="noopener">www.cndp.ma</a>).
+        légitimes, à leur traitement. Responsable : {site.orgName}
+        {site.phone && <>, <a href={`tel:+${site.phoneIntl}`}>{site.phone}</a></>}
+        {site.email && <>, <a href={`mailto:${site.email}`}>{site.email}</a></>}. Vous pouvez aussi saisir la Commission
+        nationale de contrôle de la protection des données à caractère personnel (CNDP,
+        <a href="https://www.cndp.ma" rel="noopener">www.cndp.ma</a>).
     </p>
 
-    <h2>Le logiciel, lui, ne collecte rien</h2>
+    <h2>Le logiciel, lui non plus, ne collecte rien</h2>
     <p>
         Cette politique concerne ce site. Le logiciel d’inventaire des archives fonctionne sans Internet : il ne nous envoie aucune
         donnée de vos archives, de vos utilisateurs ou de son utilisation.

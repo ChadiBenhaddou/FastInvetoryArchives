@@ -1,6 +1,6 @@
 ---
 import Base from '../layouts/Base.astro';
-import LeadForm from '../components/LeadForm.astro';
+import ContactOptions from '../components/ContactOptions.astro';
 import { site } from '../config/site.mjs';
 ---
 
@@ -12,18 +12,19 @@ import { site } from '../config/site.mjs';
     <div class="grid gap-10 lg:grid-cols-[1fr_20rem]">
         <div>
             <h1 class="text-3xl font-bold text-ink sm:text-4xl">Parlons de votre projet</h1>
-            <p class="mt-4 text-lg text-stone-600">Démonstration, devis, pilote sur un échantillon de vos boîtes ou application sur mesure : décrivez votre besoin, nous vous répondons par e-mail.</p>
-            <div class="mt-8"><LeadForm /></div>
+            <p class="mt-4 text-lg text-stone-600">Démonstration, devis, pilote sur un échantillon de vos boîtes ou application sur mesure : écrivez-nous ou appelez-nous, nous vous répondons rapidement.</p>
+            <div class="mt-8"><ContactOptions /></div>
         </div>
         <aside class="space-y-6 text-sm text-stone-600 lg:pt-24">
             <div class="rounded-xl bg-white p-5 ring-1 ring-stone-200">
-                <p class="font-semibold text-ink">Par e-mail</p>
-                <p class="mt-2"><a href={`mailto:${site.email}`} class="text-brand-700 hover:underline">{site.email}</a></p>
-                {site.phone && <><p class="mt-4 font-semibold text-ink">Par téléphone</p><p class="mt-2">{site.phone}</p></>}
+                <p class="font-semibold text-ink">{site.orgName}</p>
+                {site.phone && <p class="mt-2"><a href={`tel:+${site.phoneIntl}`} class="text-brand-700 hover:underline">{site.phone}</a></p>}
+                {site.email && <p class="mt-2"><a href={`mailto:${site.email}`} class="text-brand-700 hover:underline">{site.email}</a></p>}
+                {site.city && <p class="mt-2">{site.city}, Maroc</p>}
             </div>
             <div class="rounded-xl bg-white p-5 ring-1 ring-stone-200">
                 <p class="font-semibold text-ink">Vos données</p>
-                <p class="mt-2">Elles servent uniquement à vous répondre. Ce site n’utilise ni cookie publicitaire ni traceur tiers.</p>
+                <p class="mt-2">Ce site ne collecte aucune donnée personnelle : ni formulaire, ni cookie, ni traceur. Ce que vous nous écrivez sert uniquement à vous répondre.</p>
             </div>
         </aside>
     </div>

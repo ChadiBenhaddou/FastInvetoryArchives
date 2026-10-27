@@ -15,9 +15,9 @@
 | Partie | Technique | Où |
 |---|---|---|
 | Site public | Astro (sortie statique), Tailwind 4, polices Noto auto-hébergées, collections Markdown validées par schéma | `website/src/` → `website/dist/` |
-| Hébergement | Cloudflare Pages, racine du projet `website/` | `website/wrangler.toml` |
+| Hébergement | Cloudflare Pages, racine du projet `website/` (réglages dans le tableau de bord Cloudflare) | `website/docs/DEPLOIEMENT.md` |
 | `noindex` hors production | Pages Function `_middleware` (en-tête `X-Robots-Tag`) selon l'hôte + balise meta au build | `website/functions/_middleware.ts` |
-| Formulaires de contact | Pages Function `POST /api/lead` : validation serveur, Turnstile, pot de miel, limite de débit, stockage D1 et/ou e-mail (Resend) | `website/functions/api/lead.ts` |
+| Contact | Pas de formulaire (décision du propriétaire, 27/10/2026 : aucune donnée personnelle collectée par le site) : boutons WhatsApp avec message prérempli, téléphone, e-mail | `website/src/components/ContactOptions.astro` |
 | Recherche de mots-clés | Scripts Node exécutés par GitHub Actions ; DataForSEO en direct (budget, cache, mode à blanc) | `website/scripts/seo/` |
 | Base de mots-clés | JSON versionné | `website/research/` |
 | Rédaction | API Claude (Anthropic), clé côté GitHub Actions seulement | `website/scripts/seo/generate-article.mjs` |
@@ -31,7 +31,7 @@
 1. Fondations : inventaire des fonctionnalités, captures réelles (scripts e2e existants, données d'exemple),
    squelette Astro, accueil, pages produit, sur-mesure, solutions, contact, pages légales, métadonnées SEO.
 2. Blog et SEO technique : collection d'articles, pages articles, plan du site, robots, données structurées,
-   liens internes, 5 à 8 premiers articles sourcés, formulaire fonctionnel.
+   liens internes, 5 à 8 premiers articles sourcés, contact par téléphone / WhatsApp.
 3. Recherche de mots-clés : client DataForSEO (budget, cache, mode à blanc), base de mots-clés, tableau de bord.
 4. Automatisation : calendrier, briefs, rédaction, porte qualité, publication quotidienne, PR de relecture,
    résumé quotidien, dépublication.
@@ -40,7 +40,7 @@
 ## Tests
 
 - `npm test` (Vitest) : magasin de mots-clés, budget, client DataForSEO (réponses simulées), porte qualité
-  (articles volontairement défectueux), formulaire (handler avec environnement simulé).
+  (articles volontairement défectueux).
 - `npm run check:site` après `npm run build` : liens internes, métadonnées uniques, canonicals, plan du site,
   robots, brouillons absents, 404, pages orphelines.
-- Playwright (déjà dans `e2e/`) : rendu mobile et formulaire contre `wrangler pages dev`.
+- Playwright (déjà dans `e2e/`) : rendu mobile.

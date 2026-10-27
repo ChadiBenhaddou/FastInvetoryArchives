@@ -90,10 +90,9 @@ jobs:
           SITE_ENV: production
           PUBLIC_SITE_URL: ${{ vars.PUBLIC_SITE_URL }}
           PUBLIC_ORG_NAME: ${{ vars.PUBLIC_ORG_NAME }}
-          PUBLIC_CONTACT_EMAIL: ${{ vars.PUBLIC_CONTACT_EMAIL }}
           PUBLIC_PUBLISHER_NAME: ${{ vars.PUBLIC_PUBLISHER_NAME }}
-          PUBLIC_CNDP_REFERENCE: ${{ vars.PUBLIC_CNDP_REFERENCE }}
-          PUBLIC_CNDP_TRANSFERS_VALIDATED: ${{ vars.PUBLIC_CNDP_TRANSFERS_VALIDATED }}
+          PUBLIC_CONTACT_PHONE: ${{ vars.PUBLIC_CONTACT_PHONE }}
+          PUBLIC_CONTACT_EMAIL: ${{ vars.PUBLIC_CONTACT_EMAIL }}
       - name: Final decision
         id: final
         env:

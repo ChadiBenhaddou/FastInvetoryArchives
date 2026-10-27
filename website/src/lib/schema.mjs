@@ -12,9 +12,9 @@ export function organizationLd() {
         name: site.orgName,
         url: abs('/'),
         logo: abs('/logo.png'),
-        email: site.email,
     };
-    if (site.phone) org.telephone = site.phone;
+    if (site.email) org.email = site.email;
+    if (site.phone) org.telephone = `+${site.phoneIntl}`;
     if (site.city || site.address) {
         org.address = { '@type': 'PostalAddress', addressCountry: 'MA', ...(site.city && { addressLocality: site.city }), ...(site.address && { streetAddress: site.address }) };
     }

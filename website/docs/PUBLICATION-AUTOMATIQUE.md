@@ -76,7 +76,7 @@ Arrêter complètement : Actions → website-daily-article → « Disable workfl
 - **GitHub Actions** : 8 démarrages courts par jour (contrôle de l'heure) + 1 exécution complète
   (quelques minutes). Gratuit sur un dépôt public ; sur un dépôt privé, cela consomme une partie du
   quota mensuel gratuit de minutes.
-- **Cloudflare Pages / D1 / Turnstile / Access** : offres gratuites suffisantes pour ce volume
+- **Cloudflare Pages / Access** : offres gratuites suffisantes pour ce volume
   (Access gratuit jusqu'à 50 utilisateurs).
 
 ## Refus du modèle

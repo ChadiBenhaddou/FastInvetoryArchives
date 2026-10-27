@@ -16,8 +16,8 @@ import { site } from '../config/site.mjs';
         {site.city && <>{site.city}, Maroc<br /></>}
         {site.rc && <>Registre du commerce : {site.rc}<br /></>}
         {site.ice && <>ICE : {site.ice}<br /></>}
-        E-mail : <a href={`mailto:${site.email}`}>{site.email}</a>
-        {site.phone && <><br />Téléphone : {site.phone}</>}
+        {site.phone && <>Téléphone : <a href={`tel:+${site.phoneIntl}`}>{site.phone}</a><br /></>}
+        {site.email && <>E-mail : <a href={`mailto:${site.email}`}>{site.email}</a></>}
     </p>
     <p>Directeur de la publication : {site.publisher}</p>
 

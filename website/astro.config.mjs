@@ -11,7 +11,7 @@ if (isProduction && missingProductionSettings().length) {
 }
 
 // Pages never listed in the sitemap (thank-you pages, 404).
-const NOT_IN_SITEMAP = ['/merci/', '/404/'];
+const NOT_IN_SITEMAP = ['/404/'];
 
 export default defineConfig({
     site: site.url,

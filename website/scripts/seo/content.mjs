@@ -34,7 +34,7 @@ export function sitePaths(posts = loadPosts()) {
         .filter((f) => f.endsWith('.astro') && !f.includes('['))
         .map((f) => '/' + relative(pagesDir, f).split(sep).join('/').replace(/\.astro$/, '').replace(/(^|\/)index$/, '') + '/')
         .map((p) => p.replace(/\/+/g, '/'))
-        .filter((p) => !['/404/', '/merci/'].includes(p));
+        .filter((p) => p !== '/404/');
     for (const p of posts) if (!p.data.draft) paths.push(`/blog/${p.data.slug}/`);
     return [...new Set(paths)].sort();
 }

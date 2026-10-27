@@ -1,6 +1,9 @@
 # Site web — Inventaire rapide des archives
 
-Site vitrine et SEO (français, Maroc) de deux offres :
+Site vitrine et SEO (français, Maroc) de deux offres. Il ne collecte aucune donnée personnelle :
+pas de formulaire, pas de cookie ; les visiteurs contactent par WhatsApp, téléphone ou e-mail.
+
+Les deux offres :
 
 - **A — Inventaire rapide des archives** : le logiciel hors ligne de ce dépôt (photos de boîtes →
   OCR → recherche), présenté uniquement avec des fonctionnalités prouvées
@@ -14,7 +17,7 @@ Projet séparé : rien ici n'est utilisé par l'application, et l'application n'
 | Dossier | Rôle |
 |---|---|
 | `src/` | site Astro statique : pages, 8 articles (`src/content/blog/`), composants, captures d'écran réelles |
-| `functions/`, `server/`, `migrations/` | formulaire de contact (Pages Function, Turnstile, D1, e-mail Resend) et `noindex` hors domaine principal |
+| `functions/` | `noindex` hors domaine principal (le site n'a pas de formulaire : contact par WhatsApp, téléphone, e-mail) |
 | `scripts/check-site.mjs` | vérifications SEO du build (liens, doublons, canonicals, sitemap, textes à compléter…) |
 | `scripts/seo/` | recherche DataForSEO, base de mots-clés, planification, rédaction IA, porte qualité, publication, retrait |
 | `research/` | données SEO commitées (mots-clés, publications, coûts) ; `research/cache/` n'est pas commité |
@@ -28,7 +31,7 @@ Projet séparé : rien ici n'est utilisé par l'application, et l'application n'
 ```
 npm ci
 npm run dev              # http://localhost:4321
-npm test                 # 42 tests
+npm test                 # 31 tests
 npm run build:pages      # build + vérifications du site
 npm run seo:research -- --estimate   # essai DataForSEO sans frais (SEO_LIVE=false par défaut)
 npm run seo:article      # pipeline quotidien (nécessite ANTHROPIC_API_KEY)
@@ -41,8 +44,8 @@ Variables : [.env.example](.env.example).
 
 ## Guides
 
-- [docs/DEPLOIEMENT.md](docs/DEPLOIEMENT.md) — Cloudflare Pages (site + tableau de bord), D1, Turnstile, Access
-- [docs/CONFIGURATION-EXTERNE.md](docs/CONFIGURATION-EXTERNE.md) — tout ce qui reste à configurer hors du code (CNDP, identité légale, comptes)
+- [docs/DEPLOIEMENT.md](docs/DEPLOIEMENT.md) — Cloudflare Pages (site + tableau de bord), Access
+- [docs/CONFIGURATION-EXTERNE.md](docs/CONFIGURATION-EXTERNE.md) — tout ce qui reste à configurer hors du code (identité, comptes, clés)
 - [docs/PUBLICATION-AUTOMATIQUE.md](docs/PUBLICATION-AUTOMATIQUE.md) — article quotidien, porte qualité, retrait, coûts
 - [docs/DATAFORSEO.md](docs/DATAFORSEO.md) — recherche de mots-clés Maroc, budget, cache
 - [docs/OPENSEO.md](docs/OPENSEO.md) — évaluation d'OpenSEO et usage retenu

@@ -1,6 +1,6 @@
 ---
 import Base from '../layouts/Base.astro';
-import LeadForm from '../components/LeadForm.astro';
+import ContactOptions from '../components/ContactOptions.astro';
 ---
 
 <Base
@@ -12,7 +12,7 @@ import LeadForm from '../components/LeadForm.astro';
         <div>
             <h1 class="text-3xl font-bold text-ink sm:text-4xl">Demander une démonstration</h1>
             <p class="mt-4 text-lg text-stone-600">Nous vous montrons toute la chaîne, du téléphone à l’inventaire Excel, puis nous pouvons la tester sur un échantillon de vos boîtes.</p>
-            <div class="mt-8"><LeadForm type="demonstration" /></div>
+            <div class="mt-8"><ContactOptions only="demonstration" /></div>
         </div>
         <aside class="lg:pt-24">
             <div class="rounded-xl bg-white p-6 ring-1 ring-stone-200">

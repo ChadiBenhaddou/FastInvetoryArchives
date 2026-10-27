@@ -14,8 +14,9 @@ const year = new Date().getFullYear();
                 quitte vos locaux.
             </p>
             <p class="mt-4 text-sm">
-                <a href={`mailto:${site.email}`} class="hover:text-white">{site.email}</a>
-                {site.phone && <><br /><a href={`tel:${site.phone.replace(/\s/g, '')}`} class="hover:text-white">{site.phone}</a></>}
+                {site.phone && <a href={`tel:+${site.phoneIntl}`} class="hover:text-white">{site.phone}</a>}
+                {site.phone && site.email && <br />}
+                {site.email && <a href={`mailto:${site.email}`} class="hover:text-white">{site.email}</a>}
             </p>
         </div>
         <nav aria-label="Le logiciel">

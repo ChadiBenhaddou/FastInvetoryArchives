@@ -40,7 +40,7 @@ const pages = htmlFiles.map((file) => {
         description: attr(html, /<meta name="description" content="([^"]*)"/),
         canonical: attr(html, /<link rel="canonical" href="([^"]*)"/),
         robots: attr(html, /<meta name="robots" content="([^"]*)"/) ?? '',
-        // noindex chosen by the page itself (thank-you page, 404); outside production every page is noindex.
+        // noindex chosen by the page itself (404); outside production every page is noindex.
         ownNoindex: /<html[^>]*data-noindex="page"/.test(html),
         links: [...html.matchAll(/<a\b[^>]*\bhref="([^"]+)"/g)].map((m) => m[1]),
     };

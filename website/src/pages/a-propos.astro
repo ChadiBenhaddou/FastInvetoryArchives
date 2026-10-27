@@ -27,7 +27,8 @@ import { site } from '../config/site.mjs';
 
     <h2>Nous contacter</h2>
     <p>
-        Par e-mail à <a href={`mailto:${site.email}`}>{site.email}</a>{site.city && <>, depuis {site.city}</>}, ou par le
-        <a href="/contact/">formulaire de contact</a>.
+        {site.phone && <>Par téléphone ou WhatsApp au <a href={`tel:+${site.phoneIntl}`}>{site.phone}</a>{site.email ? ', ' : ' '}</>}
+        {site.email && <>par e-mail à <a href={`mailto:${site.email}`}>{site.email}</a> </>}
+        — toutes les possibilités sont sur la <a href="/contact/">page contact</a>.
     </p>
 </Page>

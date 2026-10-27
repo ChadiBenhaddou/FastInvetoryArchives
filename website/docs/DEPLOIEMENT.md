@@ -17,29 +17,25 @@ ni publié par ces projets.
 
 1. Cloudflare → Workers & Pages → Create → Pages → Connect to Git → ce dépôt.
 2. Branche de production : `main`. Racine : `website`. Build : `npm ci && npm run build:pages`.
-   Sortie : `dist`. Le dossier `website/functions/` (formulaire, en-têtes `noindex`) est détecté seul.
+   Sortie : `dist`. Le dossier `website/functions/` (en-têtes `noindex` hors domaine principal) est
+   détecté seul. Pas de `wrangler.toml` : tous les réglages se font dans le tableau de bord Cloudflare.
 3. Build watch paths (Settings → Builds) : inclure `website/*` pour ne pas reconstruire à chaque
    modification de l'application.
-4. Variables (Production) : toutes les `PUBLIC_*` de [CONFIGURATION-EXTERNE.md](CONFIGURATION-EXTERNE.md),
-   `NODE_VERSION`. Secrets : `TURNSTILE_SECRET_KEY`, `LEADS_IP_SALT`, et si e-mail `RESEND_API_KEY`,
-   `LEADS_TO_EMAIL`, `LEADS_FROM_EMAIL`.
+4. Variables (Production) : `NODE_VERSION`, `PUBLIC_SITE_URL`, `PUBLIC_PUBLISHER_NAME`,
+   `PUBLIC_CONTACT_PHONE` et/ou `PUBLIC_CONTACT_EMAIL`, et les `PUBLIC_*` facultatives de
+   [CONFIGURATION-EXTERNE.md](CONFIGURATION-EXTERNE.md). Aucun secret : le site ne stocke rien.
    Sur l'environnement Preview, ne mettez pas `SITE_ENV=production` : les aperçus restent `noindex`.
-5. D1 :
-   ```
-   npx wrangler d1 create inventaire-archives-leads        # copier database_id dans wrangler.toml
-   npx wrangler d1 migrations apply inventaire-archives-leads --remote
-   ```
-   Le binding `LEADS_DB` est déclaré dans `wrangler.toml`.
-6. Domaine personnalisé (Custom domains) → mettre la même adresse dans `PUBLIC_SITE_URL`.
-   Toute autre adresse (`*.pages.dev`, aperçus) reçoit `X-Robots-Tag: noindex` (`functions/_middleware.ts`).
-7. Redéployer, puis contrôler : `/robots.txt` contient la ligne `Sitemap:`, `/sitemap-index.xml`
-   existe, le formulaire de `/contact/` enregistre une demande (`npx wrangler d1 execute
-   inventaire-archives-leads --remote --command "select id, created_at, type from leads"`).
+5. Sans domaine, `PUBLIC_SITE_URL=https://inventaire-archives-site.pages.dev` (l'adresse affichée par
+   Cloudflare). Avec un domaine : Custom domains → l'ajouter → mettre la même adresse dans
+   `PUBLIC_SITE_URL` → redéployer. Toute autre adresse (aperçus, ancienne adresse) reçoit
+   `X-Robots-Tag: noindex` (`functions/_middleware.ts`).
+6. Contrôler : `/robots.txt` contient la ligne `Sitemap:`, `/sitemap-index.xml` existe, les boutons de
+   `/contact/` ouvrent WhatsApp et le téléphone.
 
 ### Garde-fous du build
 
 - `SITE_ENV=production` (ou branche de production sur Cloudflare) sans `PUBLIC_SITE_URL`,
-  `PUBLIC_ORG_NAME`, `PUBLIC_CONTACT_EMAIL`, `PUBLIC_PUBLISHER_NAME` → build refusé.
+  `PUBLIC_PUBLISHER_NAME` et un téléphone ou un e-mail → build refusé.
 - `scripts/check-site.mjs` (lancé par `build:pages`) échoue en production s'il reste « [À COMPLÉTER »
   sur une page, et à chaque build si un lien interne est cassé, un titre/une description en double,
   une page orpheline, un brouillon publié, un canonical faux ou le sitemap incohérent.
@@ -59,7 +55,7 @@ ni publié par ces projets.
    (`functions/_middleware.ts` vérifie la signature RS256 du jeton Access, l'audience, l'émetteur et
    l'expiration). Sans `ACCESS_TEAM_DOMAIN`/`ACCESS_AUD`, tout est refusé (403).
 6. Les boutons (« Lancer l'article du jour », « Retirer », « Recherche ») appellent `/api/dispatch`,
-   qui vérifie l'e-mail dans `DASHBOARD_ADMINS`, limite le débit (KV optionnel) puis déclenche le
+   qui vérifie l'e-mail dans `DASHBOARD_ADMINS`, limite le débit (optionnel : Settings → Bindings → KV namespace nommé `DASHBOARD_KV`) puis déclenche le
    workflow GitHub correspondant. Le jeton GitHub ne quitte jamais le serveur.
 
 Les données du tableau de bord (`data.json`) sont calculées au build depuis `research/` et les
@@ -77,7 +73,6 @@ requests.
 npm ci
 npm test
 npm run build:pages
-npx wrangler d1 migrations apply inventaire-archives-leads --local
-npx wrangler pages dev dist          # formulaire avec les clés Turnstile de test (.dev.vars)
+npx wrangler pages dev dist          # site + fonction noindex, comme sur Cloudflare
 npm run dashboard:build              # puis servir dashboard/dist pour voir l'interface
 ```

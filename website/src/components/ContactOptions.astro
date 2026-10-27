@@ -1,0 +1,51 @@
+---
+// Contact without a form: WhatsApp (pre-filled message), phone and e-mail. The site stores nothing;
+// the visitor chooses what to send, through their own app.
+import { site } from '../config/site.mjs';
+
+type Kind = 'demonstration' | 'devis' | 'sur-mesure';
+interface Props { only?: Kind }
+const { only } = Astro.props;
+
+const KINDS: Record<Kind, { title: string; intro: string; subject: string; message: string }> = {
+    demonstration: {
+        title: 'Demander une démonstration',
+        intro: 'Toute la chaîne, du téléphone à l’inventaire Excel, sur place ou à distance.',
+        subject: 'Demande de démonstration — Inventaire rapide des archives',
+        message: 'Bonjour, je souhaite une démonstration du logiciel « Inventaire rapide des archives ».\nOrganisation :\nVille :\nNombre de boîtes (approximatif) :\nLangues des documents :',
+    },
+    devis: {
+        title: 'Demander un devis ou un pilote',
+        intro: 'Un essai sur un échantillon de vos boîtes, puis un devis pour l’ensemble.',
+        subject: 'Demande de devis / pilote — Inventaire rapide des archives',
+        message: 'Bonjour, je souhaite un devis ou un pilote pour l’inventaire de nos archives.\nOrganisation :\nVille :\nNombre de boîtes (approximatif) :\nDélai souhaité :',
+    },
+    'sur-mesure': {
+        title: 'Parler de votre projet sur mesure',
+        intro: 'Décrivez votre besoin en quelques lignes : nous en parlons avant tout devis.',
+        subject: 'Projet d’application sur mesure',
+        message: 'Bonjour, je souhaite parler d’un projet d’application sur mesure.\nOrganisation :\nBesoin en quelques lignes :\nDélai souhaité :',
+    },
+};
+const kinds = (only ? [only] : (Object.keys(KINDS) as Kind[])).map((id) => ({ id, ...KINDS[id] }));
+const whatsapp = (text: string) => `https://wa.me/${site.whatsapp}?text=${encodeURIComponent(text)}`;
+const mail = (k: (typeof kinds)[number]) => `mailto:${site.email}?subject=${encodeURIComponent(k.subject)}&body=${encodeURIComponent(k.message)}`;
+---
+
+<div class="space-y-5">
+    {kinds.map((k) => (
+        <section id={k.id} class="scroll-mt-24 rounded-xl bg-white p-6 ring-1 ring-stone-200 target:ring-2 target:ring-brand-500" aria-labelledby={`${k.id}-titre`}>
+            <h2 id={`${k.id}-titre`} class="text-xl font-semibold text-ink">{k.title}</h2>
+            <p class="mt-2 text-stone-600">{k.intro}</p>
+            <div class="mt-4 flex flex-wrap gap-3">
+                {site.whatsapp && <a href={whatsapp(k.message)} rel="noopener" class="rounded-md bg-brand-500 px-5 py-3 font-semibold text-ink hover:bg-brand-100">Écrire sur WhatsApp</a>}
+                {site.phone && <a href={`tel:+${site.phoneIntl}`} class="rounded-md border border-stone-300 px-5 py-3 font-semibold text-ink hover:bg-stone-100">Appeler le {site.phone}</a>}
+                {site.email && <a href={mail(k)} class="rounded-md border border-stone-300 px-5 py-3 font-semibold text-ink hover:bg-stone-100">Envoyer un e-mail</a>}
+            </div>
+        </section>
+    ))}
+    <p class="text-sm text-stone-500">
+        Ce site n’a pas de formulaire et n’enregistre rien : vous nous écrivez directement depuis votre téléphone ou votre
+        messagerie. N’envoyez pas de documents confidentiels à ce stade, une description suffit.
+    </p>
+</div>
