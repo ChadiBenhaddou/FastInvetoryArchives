@@ -1,0 +1,49 @@
+---
+import Page from '../../layouts/Page.astro';
+import { PRODUCT_PAGES } from '../../config/nav.mjs';
+---
+
+<Page
+    title="Installation hors ligne sur Windows ou Ubuntu, depuis une clé USB"
+    h1="Installation hors ligne"
+    description="Installer le logiciel sans Internet depuis une clé USB : Windows sans Docker, Windows avec Docker Desktop, ou Ubuntu. Licences et vérification."
+    lead="Tout arrive sur une clé USB : programmes, modèles de lecture, application des téléphones, guide. Le PC n’a jamais besoin d’Internet, ni pendant l’installation, ni ensuite."
+    breadcrumbs={[{ name: 'Accueil', href: '/' }, { name: 'Le logiciel', href: '/logiciel-inventaire-archives/' }, { name: 'Installation hors ligne', href: '/logiciel-inventaire-archives/installation-hors-ligne/' }]}
+    offer="inventaire"
+    siblings={PRODUCT_PAGES}
+    siblingsTitle="Le logiciel en détail"
+>
+    <h2>Trois façons d’installer</h2>
+    <table>
+        <thead><tr><th></th><th>Windows, mode portable</th><th>Windows avec Docker</th><th>Ubuntu</th></tr></thead>
+        <tbody>
+            <tr><td>À installer</td><td>Python 3.12 seulement</td><td>WSL et Docker Desktop, virtualisation activée dans le BIOS</td><td>Docker Engine (paquets fournis pour Ubuntu 24.04)</td></tr>
+            <tr><td>Démarrage</td><td>Un double-clic sur <code>Demarrer.bat</code></td><td>Avec Docker Desktop, à l’ouverture de session</td><td>Au démarrage du PC</td></tr>
+            <tr><td>Base de données</td><td>Un fichier, dans un seul dossier de données</td><td>MySQL</td><td>MySQL</td></tr>
+            <tr><td>Lecture OCR</td><td>OCR de Windows (optionnel) + PaddleOCR</td><td>OCR de Windows (optionnel) + PaddleOCR + Tesseract</td><td>PaddleOCR + Tesseract</td></tr>
+            <tr><td>IA locale optionnelle</td><td>Non</td><td>Oui</td><td>Oui</td></tr>
+            <tr><td>Plusieurs PC</td><td>Réseau local fermé (adresses autorisées) ou dossier de données copié par clé USB</td><td>Sur le PC seulement</td><td>Sur le PC seulement</td></tr>
+            <tr><td>Licences</td><td>Libres</td><td>Docker Desktop payant pour les grandes organisations</td><td>Libres</td></tr>
+        </tbody>
+    </table>
+
+    <h2>Docker Desktop : une question de licence</h2>
+    <p>
+        Docker Desktop n’est gratuit que pour l’usage personnel, l’enseignement, les projets open source non commerciaux et les
+        petites entreprises (moins de 250 salariés et moins de 10 millions de dollars de chiffre d’affaires annuel). Une
+        administration ou un grand organisme doit acheter un abonnement pour chaque PC. Les conditions en vigueur sont sur
+        docker.com. Les alternatives gratuites : <strong>Ubuntu</strong> (Docker Engine est libre) ou le <strong>mode portable
+        Windows</strong>, qui n’utilise pas Docker.
+    </p>
+
+    <h2>Le déroulé</h2>
+    <ol>
+        <li>Copier la clé USB sur le PC. L’installeur contrôle chaque fichier par son empreinte SHA-256.</li>
+        <li>Installer le prérequis (Python 3.12, ou WSL et Docker selon la méthode), sans Internet : les installeurs sont sur la clé.</li>
+        <li>Lancer l’installation ou <code>Demarrer.bat</code> ; choisir le mot de passe du compte administrateur.</li>
+        <li><strong>Vérifier, réseau coupé</strong> : un export d’exemple est traité de bout en bout, la recherche est testée en arabe et en français, puis les données de test sont supprimées.</li>
+        <li>Préparer les téléphones : une lettre par appareil sur le PC, installation de l’application par câble, code PIN.</li>
+    </ol>
+    <p>Les mises à jour arrivent de la même façon, sur une nouvelle clé : les données, comptes et réglages sont conservés, et une sauvegarde est faite avant.</p>
+    <p>Matériel conseillé : voir la <a href="/logiciel-inventaire-archives/configuration-requise/">configuration requise</a>.</p>
+</Page>

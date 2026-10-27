@@ -1,0 +1,12 @@
+# Short or likely addresses → canonical pages (301). Trailing slashes are enforced by Cloudflare Pages.
+/logiciel /logiciel-inventaire-archives/ 301
+/logiciel/ /logiciel-inventaire-archives/ 301
+/sur-mesure /applications-sur-mesure/ 301
+/sur-mesure/ /applications-sur-mesure/ 301
+/demo /demander-une-demonstration/ 301
+/demo/ /demander-une-demonstration/ 301
+/devis /contact/#devis 301
+/devis/ /contact/#devis 301
+/articles/* /blog/:splat 301
+/confidentialite /politique-de-confidentialite/ 301
+/confidentialite/ /politique-de-confidentialite/ 301

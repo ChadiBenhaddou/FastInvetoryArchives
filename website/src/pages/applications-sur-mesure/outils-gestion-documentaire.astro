@@ -1,0 +1,40 @@
+---
+import Page from '../../layouts/Page.astro';
+import { CUSTOM_PAGES } from '../../config/nav.mjs';
+import { serviceLd } from '../../lib/schema.mjs';
+
+const description = "Outils de gestion documentaire sur mesure : registre du courrier, prêts de dossiers, plan de classement, rôles, journal d'audit, installés chez vous.";
+---
+
+<Page
+    title="Outils internes de gestion documentaire sur mesure"
+    h1="Outils internes de gestion documentaire"
+    description={description}
+    lead="Registre du courrier, prêts de dossiers, suivi d’un plan de classement : des outils simples, faits pour vos circuits, plutôt qu’un logiciel générique qu’il faut contourner."
+    breadcrumbs={[{ name: 'Accueil', href: '/' }, { name: 'Applications sur mesure', href: '/applications-sur-mesure/' }, { name: 'Outils de gestion documentaire', href: '/applications-sur-mesure/outils-gestion-documentaire/' }]}
+    jsonLd={[serviceLd({ name: 'Outils internes de gestion documentaire', description, path: '/applications-sur-mesure/outils-gestion-documentaire/' })]}
+    offer="sur-mesure"
+    siblings={CUSTOM_PAGES}
+    siblingsTitle="Types de projets"
+>
+    <h2>Des besoins fréquents</h2>
+    <p>Quelques exemples de ce qu’un outil interne peut couvrir. Chacun se construit sur demande, après analyse de vos circuits :</p>
+    <ul>
+        <li><strong>Registre du courrier</strong> arrivée et départ : numérotation, destinataires, suivi des réponses.</li>
+        <li><strong>Mouvements et prêts de dossiers</strong> : qui a sorti quel dossier, depuis quand, relances.</li>
+        <li><strong>Plan de classement et tableau de gestion</strong> appliqués à votre inventaire : cotes, durées de conservation, sorts finaux.</li>
+        <li><strong>Liaison</strong> avec une GED ou un ERP existant, par export ou échange de fichiers.</li>
+    </ul>
+
+    <h2>Le socle commun</h2>
+    <p>Les outils que nous construisons reprennent ce qui a fait ses preuves dans le logiciel d’inventaire des archives :</p>
+    <ul>
+        <li>comptes personnels et <strong>rôles</strong>, comptes désactivés plutôt que supprimés ;</li>
+        <li><strong>journal d’audit</strong> de chaque modification (qui, quand, avant, après) ;</li>
+        <li><strong>exports</strong> Excel et CSV ;</li>
+        <li><strong>sauvegardes</strong> automatiques et restauration ;</li>
+        <li>interface en <strong>français et en arabe</strong> si besoin ;</li>
+        <li>installation <strong>chez vous</strong>, y compris sur des postes sans Internet.</li>
+    </ul>
+    <p>Pour cadrer votre projet : <a href="/blog/logiciel-sur-mesure-ou-standard-administration/">logiciel sur mesure ou standard, comment choisir</a>.</p>
+</Page>

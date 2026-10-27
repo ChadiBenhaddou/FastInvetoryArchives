@@ -1,0 +1,36 @@
+---
+import Page from '../layouts/Page.astro';
+import { site } from '../config/site.mjs';
+---
+
+<Page
+    title="Mentions légales"
+    description="Mentions légales du site : éditeur, directeur de la publication, hébergeur, propriété intellectuelle et contact."
+    breadcrumbs={[{ name: 'Accueil', href: '/' }, { name: 'Mentions légales', href: '/mentions-legales/' }]}
+    offer="inventaire"
+>
+    <h2>Éditeur du site</h2>
+    <p>
+        {site.orgName}{site.legalForm && <>, {site.legalForm}</>}<br />
+        {site.address && <>{site.address}<br /></>}
+        {site.city && <>{site.city}, Maroc<br /></>}
+        {site.rc && <>Registre du commerce : {site.rc}<br /></>}
+        {site.ice && <>ICE : {site.ice}<br /></>}
+        {site.phone && <>Téléphone : <a href={`tel:+${site.phoneIntl}`}>{site.phone}</a><br /></>}
+        {site.email && <>E-mail : <a href={`mailto:${site.email}`}>{site.email}</a></>}
+    </p>
+    <p>Directeur de la publication : {site.publisher}</p>
+
+    <h2>Hébergement</h2>
+    <p>Cloudflare, Inc., 101 Townsend St, San Francisco, CA 94107, États-Unis (service Cloudflare Pages).</p>
+
+    <h2>Propriété intellectuelle</h2>
+    <p>
+        Les textes, captures d’écran et éléments graphiques de ce site sont la propriété de {site.orgName}, sauf mention
+        contraire. Les captures d’écran du logiciel montrent des données d’exemple fictives. Toute reproduction sans
+        autorisation est interdite.
+    </p>
+
+    <h2>Données personnelles</h2>
+    <p>Voir la <a href="/politique-de-confidentialite/">politique de confidentialité</a>.</p>
+</Page>

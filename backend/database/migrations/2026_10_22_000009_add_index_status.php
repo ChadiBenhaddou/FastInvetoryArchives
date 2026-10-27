@@ -19,7 +19,9 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('documents', function (Blueprint $table) {
+            // SQLite (portable mode) cannot drop a column that is still indexed.
             $table->dropIndex(['extraction_status']);
+            $table->dropIndex(['index_status']);
             $table->dropColumn(['index_status', 'extraction_model']);
         });
     }

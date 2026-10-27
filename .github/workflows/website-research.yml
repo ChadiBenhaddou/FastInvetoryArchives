@@ -1,0 +1,89 @@
+# Broader keyword research (weekly, or on demand from Actions / the dashboard): Google Ads keyword ideas
+# for Morocco (French, and Arabic when enabled) + SERP of the best new keywords, within the budget.
+name: website-research
+
+on:
+  schedule:
+    - cron: '30 4 * * 1'
+  workflow_dispatch:
+    inputs:
+      arabic:
+        description: 'Aussi les mots-clés arabes pour le Maroc'
+        type: boolean
+        default: false
+      estimate_only:
+        description: 'Estimation du coût seulement (aucune requête)'
+        type: boolean
+        default: false
+
+concurrency:
+  group: website-research
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  research:
+    runs-on: ubuntu-latest
+    environment: seo-automation
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: website
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: website/.nvmrc
+          cache: npm
+          cache-dependency-path: website/package-lock.json
+      - run: npm ci
+      - uses: actions/cache@v4
+        with:
+          path: website/research/cache
+          key: dataforseo-cache-${{ github.run_id }}
+          restore-keys: dataforseo-cache-
+      - name: Cost estimate (always printed first)
+        run: node scripts/seo/research.mjs --estimate ${{ inputs.arabic && '--arabic' || '' }}
+        env:
+          SEO_LIVE: 'true'
+          DATAFORSEO_LOGIN: ${{ secrets.DATAFORSEO_LOGIN }}
+          DATAFORSEO_PASSWORD: ${{ secrets.DATAFORSEO_PASSWORD }}
+      - name: Research
+        if: ${{ !inputs.estimate_only }}
+        run: node scripts/seo/research.mjs --serp 5 ${{ inputs.arabic && '--arabic' || '' }}
+        env:
+          SEO_LIVE: 'true'
+          SEO_DAILY_BUDGET_USD: ${{ vars.SEO_DAILY_BUDGET_USD || '1' }}
+          SEO_MONTHLY_BUDGET_USD: ${{ vars.SEO_MONTHLY_BUDGET_USD || '15' }}
+          SEO_MAX_REQUESTS_PER_RUN: ${{ vars.SEO_MAX_REQUESTS_PER_RUN || '12' }}
+          DATAFORSEO_LOGIN: ${{ secrets.DATAFORSEO_LOGIN }}
+          DATAFORSEO_PASSWORD: ${{ secrets.DATAFORSEO_PASSWORD }}
+      - uses: actions/upload-artifact@v4
+        if: ${{ !inputs.estimate_only }}
+        with:
+          name: research
+          path: |
+            website/research/
+            !website/research/cache/
+          retention-days: 7
+
+  commit:
+    needs: research
+    if: ${{ !inputs.estimate_only }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: research
+          path: website/research
+      - run: |
+          git config user.name "seo-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add website/research
+          git diff --cached --quiet || { git commit -m "Recherche de mots-clés du $(date +%F)"; git push; }

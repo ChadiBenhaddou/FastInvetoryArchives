@@ -1,0 +1,41 @@
+---
+import Page from '../../layouts/Page.astro';
+import { SOLUTION_PAGES } from '../../config/nav.mjs';
+---
+
+<Page
+    title="Inventaire des archives pour administrations et collectivités"
+    h1="Administrations publiques et collectivités"
+    description="Inventorier les archives d'une administration ou d'une collectivité au Maroc, sans cloud : documents arabes et français, traçabilité, inventaire Excel."
+    lead="Dossiers administratifs en arabe et en français, données personnelles, exigences de traçabilité : l’inventaire doit être rapide, fiable et rester dans les locaux de l’administration."
+    breadcrumbs={[{ name: 'Accueil', href: '/' }, { name: 'Solutions', href: '/solutions/' }, { name: 'Administrations publiques', href: '/solutions/administrations-publiques/' }]}
+    offer="inventaire"
+    siblings={SOLUTION_PAGES}
+    siblingsTitle="Solutions"
+>
+    <h2>Les situations typiques</h2>
+    <ul>
+        <li>Un <strong>arriéré</strong> de boîtes non décrites dans des locaux d’archives intermédiaires.</li>
+        <li>Un <strong>déménagement</strong> ou une réorganisation de services, qui impose de savoir ce que contient chaque boîte.</li>
+        <li>Des <strong>demandes</strong> d’administrés ou de services auxquelles il faut répondre en retrouvant vite un dossier.</li>
+        <li>La préparation d’un <strong>versement</strong> ou d’un tri, qui suppose un inventaire à jour.</li>
+    </ul>
+
+    <h2>Ce que le logiciel apporte</h2>
+    <ul>
+        <li><strong>Aucune donnée hors des locaux</strong> : pas d’Internet, pas de nuage, pas de compte chez un éditeur ; vérification d’installation réseau coupé. <a href="/logiciel-inventaire-archives/securite-confidentialite/">Sécurité et confidentialité</a></li>
+        <li><strong>Documents en arabe et en français</strong> lus sur le PC, recherche qui tolère les variantes d’écriture arabe.</li>
+        <li><strong>Traçabilité</strong> : un compte par agent, journal de chaque correction, codes de boîte qui détectent les erreurs de recopie.</li>
+        <li><strong>Inventaire Excel</strong> exploitable tel quel, ou importable dans un autre outil (CSV).</li>
+        <li><strong>Pas de serveur à acheter</strong> : un PC de bureau et des téléphones Android ordinaires.</li>
+    </ul>
+
+    <h2>Licences : un point d’attention</h2>
+    <p>
+        Pour une administration, l’installation avec Docker Desktop sous Windows implique en général un abonnement payant par
+        poste. Le <strong>mode portable Windows</strong> (sans Docker) et l’installation sous <strong>Ubuntu</strong> n’ont pas cette
+        contrainte. Le moteur OCR de Windows, optionnel, doit être validé par votre service juridique ; le moteur libre PaddleOCR
+        reste toujours disponible. <a href="/logiciel-inventaire-archives/installation-hors-ligne/">Installation hors ligne</a>
+    </p>
+    <p>Méthode : <a href="/blog/comment-realiser-inventaire-archives-administratives/">comment réaliser un inventaire des archives administratives</a>.</p>
+</Page>

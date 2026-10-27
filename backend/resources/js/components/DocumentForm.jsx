@@ -39,7 +39,7 @@ export default function DocumentForm({ doc, form, setForm, disabled = false }) {
             <div className="flex flex-wrap items-center gap-2 text-xs">
                 {doc.reviewed_at ? (
                     <span className="flex items-center gap-1 rounded-full bg-green-100 px-2 py-0.5 text-green-800">
-                        <CheckCircle2 className="size-3.5" /> Révisé par {doc.reviewed_by} le {formatDateTime(doc.reviewed_at)}
+                        <CheckCircle2 className="size-3.5" /> Corrigé par {doc.reviewed_by} le {formatDateTime(doc.reviewed_at)}
                     </span>
                 ) : (
                     doc.review_reasons.map((r) => (

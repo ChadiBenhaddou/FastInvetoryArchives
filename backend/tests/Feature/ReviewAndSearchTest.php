@@ -38,12 +38,12 @@ class ReviewAndSearchTest extends TestCase
         $this->admin = User::factory()->admin()->create();
     }
 
-    /** Box in "review" with its code photo + $docs documents (real JPEG files on the fake disk). */
+    /** Processed box ("done") with its code photo + $docs documents (real JPEG files on the fake disk). */
     private function box(string $code = 'A-0001-C', int $docs = 2): Box
     {
         $device = Device::firstOrCreate(['letter' => $code[0]], ['label' => 'Tel']);
         $box = Box::create(['code' => $code, 'device_id' => $device->id, 'sequence' => (int) substr($code, 2, 4),
-            'status' => BoxStatus::Review, 'photo_count' => $docs + 1, 'room' => 'Salle 2', 'agent_name' => 'Amina']);
+            'status' => BoxStatus::Done, 'photo_count' => $docs + 1, 'room' => 'Salle 2', 'agent_name' => 'Amina']);
         for ($i = 0; $i <= $docs; $i++) {
             $path = sprintf('%s/%03d.jpg', $code, $i);
             Storage::disk('archive')->put($path, ExportZipBuilder::jpeg($i + 1));
@@ -104,34 +104,40 @@ class ReviewAndSearchTest extends TestCase
         $this->get("/api/images/{$image->id}", ['If-None-Match' => '"another-photo"'])->assertOk();
     }
 
-    public function test_review_saves_corrections_audits_them_and_closes_the_box(): void
+    public function test_corrections_are_saved_audited_and_clear_the_flag(): void
     {
         $box = $this->box();
-        [$first, $second] = $box->documents()->orderBy('id')->get()->all();
+        [$first] = $box->documents()->orderBy('id')->get()->all();
+        $this->assertTrue($first->needs_review);
 
-        $this->actingAs($this->reviewer)->getJson('/api/review/next')
-            ->assertOk()->assertJsonPath('data.code', 'A-0001-C')->assertJsonPath('remaining', 1);
-
-        $this->putJson("/api/documents/{$first->id}", [
-            'title' => 'Arrêté de nomination', 'doc_date' => '2019-03-12', 'persons' => ['Karim Benali'], 'approve' => true,
+        $this->actingAs($this->reviewer)->putJson("/api/documents/{$first->id}", [
+            'title' => 'Arrêté de nomination', 'doc_date' => '2019-03-12', 'persons' => ['Karim Benali'],
         ])->assertOk()->assertJsonPath('data.reviewed_by', $this->reviewer->name)->assertJsonPath('data.needs_review', false);
 
         $log = AuditLog::where(['entity' => 'document', 'entity_id' => $first->id, 'action' => 'updated'])->firstOrFail();
         $this->assertSame($this->reviewer->id, $log->user_id);
         $this->assertSame('Arrêté de nomination', $log->after['title']);
         Queue::assertPushed(IndexDocumentJob::class, fn ($job) => $job->documentId === $first->id);
-        $this->assertSame(BoxStatus::Review, $box->fresh()->status, 'one document still to review');
-
-        $this->putJson("/api/documents/{$second->id}", ['approve' => true])->assertOk();
-        $this->assertSame(BoxStatus::Done, $box->fresh()->status);
-        $this->getJson('/api/review/next')->assertJsonPath('data', null);
+        $this->assertSame(BoxStatus::Done, $box->fresh()->status, 'no validation step: the box stays done');
     }
 
-    public function test_approve_whole_box(): void
+    public function test_there_is_no_validation_step_any_more(): void
     {
         $box = $this->box();
-        $this->actingAs($this->reviewer)->postJson("/api/boxes/{$box->id}/approve")->assertOk()->assertJsonPath('data.status', 'done');
-        $this->assertSame(0, Document::whereNull('reviewed_at')->count());
+        $this->actingAs($this->reviewer)->getJson('/api/review/next')->assertNotFound();
+        // 405, not 404: the page's catch-all route answers GET on every path.
+        $this->postJson("/api/boxes/{$box->id}/approve")->assertClientError();
+    }
+
+    public function test_boxes_left_waiting_for_review_are_done_after_the_update(): void
+    {
+        $box = $this->box();
+        $box->update(['status' => BoxStatus::Review]);
+
+        (require database_path('migrations/2026_10_26_000011_finish_boxes_waiting_for_review.php'))->up();
+
+        $this->assertSame(BoxStatus::Done, $box->fresh()->status);
+        $this->assertTrue($box->documents()->where('needs_review', true)->exists(), 'flags are kept');
     }
 
     public function test_review_validates_fields(): void

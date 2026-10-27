@@ -7,7 +7,8 @@ sur une machine **connectée** à Internet. Le guide d'utilisation est le [READM
 
 | Dossier | Contenu |
 |---|---|
-| `backend/` | Laravel 13 (PHP 8.3) + interface d'administration React/Vite/Tailwind (`resources/js`) |
+| `backend/` | Laravel 13 (PHP 8.3 dans Docker, 8.4 en mode portable) + interface d'administration React/Vite/Tailwind (`resources/js`) |
+| `portable/` | Mode portable Windows sans Docker : lanceur (`launcher.py`), construction du paquet (`build.py`), fichiers `.bat` |
 | `docker/` | Image applicative (nginx + php-fpm, file d'attente, planificateur, passerelle) |
 | `ocr-worker/` | Service OCR Python : PaddleOCR PP-OCRv5 (arabe + latin) et Tesseract 5 (`ara+fra`) |
 | `windows-ocr/` | OCR Windows (moteur de l'Outil Capture d'écran via `oneocr`), service natif sur 127.0.0.1:8010, joint par la passerelle ; `OCR_ENGINE=windows` (défaut) avec PaddleOCR en secours. Tests : `py -3.12 -m unittest discover -s tests -t .` dans ce dossier |
@@ -24,7 +25,7 @@ sur une machine **connectée** à Internet. Le guide d'utilisation est le [READM
                                                          │
   127.0.0.1:80 ─▶ gateway (nginx seul) ─┬─▶ app (Laravel + React)        réseau Docker « internal » :
                                         │   queue      (imports)         aucune route vers l'extérieur
-                                        │   pipeline×2 (OCR, index)
+                                        │   pipeline×3 (OCR, index)
                                         │   extractor  (IA)
                                         │   scheduler  (dossier surveillé, sauvegarde 2 h)
                                         ├─▶ mysql 8.4
@@ -44,9 +45,9 @@ sur une machine **connectée** à Internet. Le guide d'utilisation est le [READM
   `OcrService` (`FallbackOcrService` = `WindowsOneOcrEngine` puis `PaddleOcrEngine`) ; service arrêté (connexion
   refusée, 502) → PaddleOCR pendant 1 min ; photo refusée (422) → PaddleOCR pour cette photo seulement.
 - Pipeline d'une boîte : `ImportExportJob` → `RunOcrJob` par photo (OCR + champs par `RuleExtractor`, quelques ms)
-  → `IndexDocumentJob` → la boîte passe **à réviser** quand toutes ses photos sont indexées (~0,8 s par photo,
+  → `IndexDocumentJob` → la boîte passe **terminée** (pas de validation humaine) quand toutes ses photos sont indexées (~0,8 s par photo,
   3 workers `pipeline`, file `index` prioritaire sur `ocr`). Avec `LLM_ENABLED=true` : `RunOcrJob` →
-  `IndexDocumentJob` (cherchable tout de suite) + `ExtractMetadataJob` (IA, minutes) → réindexation → à réviser.
+  `IndexDocumentJob` (cherchable tout de suite) + `ExtractMetadataJob` (IA, minutes) → réindexation → terminée.
 
 ## Démarrage (machine de développement)
 
@@ -62,7 +63,7 @@ Puis ouvrir http://localhost.
 ## Tests
 
 ```powershell
-# Backend (88 tests)
+# Backend (124 tests)
 docker build -f docker/app/Dockerfile --target test -t archive-inventory/app:test .
 docker run --rm archive-inventory/app:test
 
@@ -130,6 +131,70 @@ powershell -ExecutionPolicy Bypass -File bundle\out\ArchiveInventory-1.0.0\insta
   -InstallDir D:\ArchiveInventoryTest -ProjectName archive-test -HttpPort 8081 -Unattended -AdminPassword 'Test-2026-xyz'
 # puis : docker compose -p archive-test down -v ; supprimer D:\ArchiveInventoryTest et les raccourcis du bureau
 ```
+
+## Paquet portable Windows (sans Docker)
+
+Même application, sans conteneur : `portable/launcher.py` (Python, bibliothèque standard seulement) démarre et
+surveille tous les processus, que `docker-compose.yml` fait tourner dans les conteneurs :
+
+| Docker | Mode portable |
+|---|---|
+| `mysql` | fichier SQLite `donnees\base\archive.sqlite` (WAL, transactions `IMMEDIATE` — appliquées par Laravel seulement avec PHP ≥ 8.4, d'où PHP 8.4 dans ce mode) ; sauvegarde par `VACUUM INTO` (`SqliteDumper`) |
+| `meilisearch` | `runtime\meilisearch\meilisearch.exe` sur 127.0.0.1:7771, index dans `donnees\recherche` |
+| `app` (nginx + php-fpm), `gateway` | `runtime\nginx` sur 127.0.0.1:`HTTP_PORT` (0.0.0.0 avec `allow`/`deny all` quand `PC_AUTORISES` liste des PC du réseau local ; règle de pare-feu limitée aux mêmes adresses par `launcher.py pare-feu`) + `PHP_WORKERS` processus `php-cgi` (127.0.0.1:9171…) |
+| `queue`, `pipeline`, `scheduler` | `php artisan queue:work` / `schedule:work` (`runtime\php`) |
+| `ocr-worker` | `uvicorn` de `ocr-worker/app` sur 127.0.0.1:8771 (sans Tesseract) |
+| OCR Windows (tâche planifiée) | `windows-ocr/ocr_service.py` sur 127.0.0.1:8010, lancé par le lanceur |
+| `ollama`, `extractor` | absents (`LLM_ENABLED=false`) |
+
+Tous les processus sont dans un *job* Windows avec le lanceur : fermer sa fenêtre les arrête tous. Les réglages
+(`parametres.env`) sont passés en variables d'environnement, puis `php artisan optimize` à chaque démarrage.
+
+`donnees\` contient tout ce qu'un autre PC doit recevoir et rien d'autre : base, photos (`ARCHIVE_PHOTOS_PATH`),
+index de recherche, `cles.env` (`APP_KEY`, `MEILI_MASTER_KEY`) et `INFO.json` (dernier PC, démarré ou arrêté,
+version). À l'arrêt, le WAL est remis dans la base (`wal_checkpoint(TRUNCATE)`) : la base est un seul fichier.
+`envoyer` / `recevoir` copient avec robocopy (base et index en miroir, photos sans suppression), `INFO.json` en
+dernier. Une installation de la version précédente (base dans `systeme\`, photos dans `storage\`) est déplacée dans
+`donnees\` au premier démarrage.
+
+Construction, sur la machine connectée (Windows, Python 3.12 64 bits ; ni Docker ni Node ne sont nécessaires) :
+
+```powershell
+py -3.12 portable\build.py                   # ~2,5 Go avec PaddleOCR
+py -3.12 portable\build.py --without-paddle  # OCR Windows seulement
+```
+
+Résultat : `bundle/out/ArchiveInventory-<version>-portable/`. Les téléchargements (versions et SHA-256 fixés dans
+`build.py`) restent dans `bundle/out/cache/`. Les paquets Python sont installés par `pip install --target` dans
+`runtime\python` pour Python 3.12 x64 : le PC n'a besoin que de Python 3.12. L'APK est repris du paquet Docker
+s'il a été construit.
+
+Essai sur la machine de développement (`HTTP_PORT=8081` dans `parametres.env` si l'application Docker tourne ;
+une seule instance du mode portable à la fois : ses ports internes sont fixes) :
+
+```powershell
+robocopy bundle\out\ArchiveInventory-1.0.0-portable D:\ArchiveInventoryPortable /E
+D:\ArchiveInventoryPortable\Demarrer.bat
+```
+
+Ne pas lancer `Demarrer.bat` dans `bundle\out\…-portable` lui-même : les données y seraient créées, et la
+construction suivante les efface.
+
+Tests sans Docker (Windows), avec le PHP 8.4 et le Node du paquet portable :
+
+```bash
+# Backend : copie de backend/ + shared/ (vendor de développement), base SQLite en mémoire
+P=bundle/out/ArchiveInventory-1.0.0-portable/runtime/php
+cd <copie>/backend && $P/php.exe <cache>/composer.phar install && : > .env && $P/php.exe artisan test
+
+# Écrans du PC contre une installation portable démarrée (Playwright installé dans e2e/)
+export PATH="$PWD/bundle/out/cache/node-v22:$PATH"
+cd e2e && npm install && npx playwright install chromium
+APP_URL=http://localhost ADMIN_USER=admin ADMIN_PASSWORD=<...> OUT_DIR=<dossier> node desktop-screens.mjs
+```
+
+L'installation de test doit contenir l'appareil **K** et l'export `samples/K_20261022_1800_3boxes_exemple.zip`
+importé. `APP_URL=http://<adresse du PC>` teste l'accès par le réseau local (`PC_AUTORISES`).
 
 ## Commandes utiles
 

@@ -61,7 +61,7 @@ class ExportController extends Controller
     private function boxes(WriterInterface $writer): void
     {
         $this->header($writer, ['Code', 'Statut', 'Appareil', 'Agent', 'Salle', 'Étagère', 'Rangée',
-            'Photos', 'Documents', 'À réviser', 'Créée le', 'Fermée le', 'Import n°']);
+            'Photos', 'Documents', 'Signalés', 'Créée le', 'Fermée le', 'Import n°']);
 
         Box::with('device')
             ->withCount(['documents', 'documents as to_review' => fn ($q) => $q->where('needs_review', true)->whereNull('reviewed_at')])
@@ -81,7 +81,7 @@ class ExportController extends Controller
     {
         $this->header($writer, ['Boîte', 'Salle', 'Étagère', 'Rangée', 'Photo n°', 'Type', 'Titre', 'Date', 'Référence',
             'Personnes', 'Organismes', 'Mots-clés', 'Résumé', 'Langue', 'Manuscrit', 'Confiance OCR', 'Confiance extraction',
-            'À réviser', 'Motifs', 'Révisé par', 'Révisé le', 'Texte OCR']);
+            'Signalé', 'Motifs', 'Corrigé par', 'Corrigé le', 'Texte OCR']);
 
         Document::with(['box', 'image', 'reviewer'])
             ->join('boxes', 'boxes.id', '=', 'documents.box_id')

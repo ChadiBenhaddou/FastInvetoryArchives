@@ -27,10 +27,10 @@ export default function BoxDetailPage() {
         setMessage(null);
     }, [selected?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
-    async function save(approve) {
+    async function save() {
         try {
-            await api(`documents/${selected.document.id}`, { method: 'PUT', body: { ...fromForm(form), approve } });
-            setMessage(approve ? 'Validé.' : 'Enregistré.');
+            await api(`documents/${selected.document.id}`, { method: 'PUT', body: fromForm(form) });
+            setMessage('Correction enregistrée.');
             load();
         } catch (err) {
             setMessage(Object.values(err.errors ?? {}).flat()[0] || err.message);
@@ -87,8 +87,7 @@ export default function BoxDetailPage() {
                         {form && (
                             <div className="flex items-center gap-2 border-t border-stone-100 p-3">
                                 <span className="flex-1 text-sm text-green-700">{message}</span>
-                                <button onClick={() => save(false)} className="rounded-md bg-stone-100 px-3 py-2 text-sm hover:bg-stone-200">Enregistrer</button>
-                                <button onClick={() => save(true)} className="rounded-md bg-amber-600 px-4 py-2 text-sm font-medium text-white hover:bg-amber-700">Valider</button>
+                                <button onClick={save} className="rounded-md bg-amber-600 px-4 py-2 text-sm font-medium text-white hover:bg-amber-700">Enregistrer la correction</button>
                             </div>
                         )}
                     </div>

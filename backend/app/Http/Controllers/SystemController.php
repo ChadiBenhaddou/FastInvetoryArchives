@@ -38,8 +38,9 @@ class SystemController extends Controller
                 'pending' => DB::table('jobs')->count(),
                 'failed' => DB::table('failed_jobs')->count(),
             ],
-            'folders' => collect(['import', 'imported', 'failed', 'storage', 'backups'])
-                ->mapWithKeys(fn ($f) => [$f => rtrim(config('archive.host_root'), '/\\').'/'.$f]),
+            'folders' => collect(['import', 'imported', 'failed', 'backups'])
+                ->mapWithKeys(fn ($f) => [$f => rtrim(config('archive.host_root'), '/\\').'/'.$f])
+                ->put('storage', config('archive.host_photos')),
             'disk' => is_dir($root) ? [
                 'free_bytes' => disk_free_space($root),
                 'total_bytes' => disk_total_space($root),

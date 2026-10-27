@@ -94,7 +94,7 @@ export default function SearchPage() {
                                     {hit.doc_type && <span className="rounded bg-stone-100 px-1.5">{hit.doc_type}</span>}
                                     {hit.doc_date && <span>{formatDate(hit.doc_date)}</span>}
                                     {hit.reference_number && <span className="font-mono"><Highlight text={hit.reference_number} /></span>}
-                                    {hit.needs_review && <span className="rounded bg-amber-100 px-1.5 text-amber-800">à réviser</span>}
+                                    {hit.needs_review && <span className="rounded bg-amber-100 px-1.5 text-amber-800">signalé</span>}
                                 </div>
                                 {hit.title && <p className="font-medium"><Highlight text={hit.title} /></p>}
                                 {hit.snippet && <p className="text-sm leading-relaxed text-stone-600"><Highlight text={hit.snippet} /></p>}

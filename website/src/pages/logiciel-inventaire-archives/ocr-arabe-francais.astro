@@ -1,0 +1,62 @@
+---
+import Page from '../../layouts/Page.astro';
+import Screenshot from '../../components/Screenshot.astro';
+import { PRODUCT_PAGES } from '../../config/nav.mjs';
+import boxDetail from '../../assets/screenshots/desktop/box-detail.png';
+---
+
+<Page
+    title="OCR arabe et français hors ligne pour les archives"
+    h1="Lecture OCR en arabe et en français"
+    description="OCR des archives en arabe et en français, entièrement sur le PC : moteurs utilisés, vitesse mesurée et ses conditions, extraction des champs, limites."
+    lead="Chaque photo de dossier est lue sur le PC lui-même : aucune page n’est envoyée à un service en ligne. Le texte lu sert à la recherche et à l’extraction des champs de l’inventaire."
+    breadcrumbs={[{ name: 'Accueil', href: '/' }, { name: 'Le logiciel', href: '/logiciel-inventaire-archives/' }, { name: 'OCR arabe et français', href: '/logiciel-inventaire-archives/ocr-arabe-francais/' }]}
+    offer="inventaire"
+    siblings={PRODUCT_PAGES}
+    siblingsTitle="Le logiciel en détail"
+>
+    <h2>Les moteurs de lecture</h2>
+    <table>
+        <thead><tr><th>Moteur</th><th>Quand</th><th>À savoir</th></tr></thead>
+        <tbody>
+            <tr><td><strong>PaddleOCR</strong> (PP-OCRv5, arabe et latin)</td><td>Toujours disponible ; seul moteur sous Ubuntu</td><td>Libre (Apache 2.0). Si PaddleOCR ne trouve rien, Tesseract (arabe + français) prend le relais dans l’installation Docker.</td></tr>
+            <tr><td><strong>OCR de Windows</strong> (moteur de l’Outil Capture d’écran)</td><td>Optionnel, sous Windows 11</td><td>Plus rapide et meilleur sur l’arabe dans nos essais. Moteur propriétaire de Microsoft, dont cet usage n’est pas documenté : <strong>sa licence doit être validée par votre service juridique</strong>. S’il est absent ou arrêté, PaddleOCR est utilisé automatiquement.</td></tr>
+        </tbody>
+    </table>
+    <p>Avant la lecture, l’orientation de la page (0, 90, 180 ou 270°) est corrigée automatiquement.</p>
+
+    <h2>Vitesse : des chiffres et leurs conditions</h2>
+    <p>Mesures faites sur un portable Core i5-11300H (4 cœurs, 16 Go de mémoire) sans autre travail, de l’import à la boîte terminée, trois photos traitées en parallèle :</p>
+    <table>
+        <thead><tr><th>Moteur</th><th>Temps par photo</th></tr></thead>
+        <tbody>
+            <tr><td>OCR de Windows (optionnel)</td><td>environ 0,8 seconde</td></tr>
+            <tr><td>PaddleOCR (libre)</td><td>environ 6 à 15 secondes</td></tr>
+        </tbody>
+    </table>
+    <p>Sur un autre PC, ces temps changent : mesurez-les lors du pilote. Des programmes ouverts en même temps peuvent les doubler.</p>
+
+    <h2>De la page au champ d’inventaire</h2>
+    <p>
+        Dans le texte lu, des règles écrites pour le français et l’arabe trouvent en quelques millisecondes le <strong>type de
+        document</strong>, la <strong>date</strong>, la <strong>référence</strong>, le <strong>titre</strong>, les
+        <strong>personnes</strong> et les <strong>organismes</strong>. Les valeurs sont toujours prises dans le texte lui-même :
+        ce qui n’est pas trouvé reste vide, rien n’est deviné.
+    </p>
+    <Screenshot src={boxDetail} alt="Photo d’un arrêté et champs extraits : type, date, référence, titre, personnes, organismes" caption="Une page lue : le texte et les champs extraits, modifiables" />
+    <p>
+        En option, dans l’installation avec Docker, un modèle de langue installé sur le PC (Qwen3-4B ou Phi-4-mini, licences
+        libres) donne de meilleurs titres, des mots-clés et un résumé. Sur processeur seul, il prend 1 à 2,5 minutes par
+        document : il est désactivé par défaut.
+    </p>
+
+    <h2>Ce qui est signalé</h2>
+    <ul>
+        <li><strong>Lecture peu sûre</strong> : confiance de l’OCR trop faible.</li>
+        <li><strong>Manuscrit probable</strong> : l’écriture manuscrite est mal lue.</li>
+        <li><strong>Aucun texte détecté</strong> : photo vide, illisible ou page blanche.</li>
+        <li><strong>Extraction peu sûre</strong> ou en échec.</li>
+    </ul>
+    <p>Ces documents ne bloquent rien : la boîte est terminée quand ses photos sont lues. Ils sont comptés sur le tableau de bord, marqués dans la recherche et l’inventaire Excel, et chacun peut être corrigé quand vous le souhaitez.</p>
+    <p>Pour aller plus loin : <a href="/blog/ocr-documents-arabes-possibilites-limites/">OCR des documents en arabe : possibilités et limites</a>.</p>
+</Page>

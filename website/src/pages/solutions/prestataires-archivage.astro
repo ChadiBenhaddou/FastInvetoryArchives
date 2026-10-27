@@ -1,0 +1,37 @@
+---
+import Page from '../../layouts/Page.astro';
+import { SOLUTION_PAGES } from '../../config/nav.mjs';
+---
+
+<Page
+    title="Logiciel d'inventaire pour prestataires et cabinets d'archivage"
+    h1="Cabinets et prestataires d’archivage"
+    description="Outil d'inventaire pour prestataires d'archivage au Maroc : téléphones en parallèle, une lettre par appareil, conflits détectés, suivi par agent."
+    lead="Un prestataire traite des milliers de boîtes chez ses clients, avec plusieurs équipes en même temps. Il lui faut des codes sans doublon, un suivi par agent et un inventaire livrable sans ressaisie."
+    breadcrumbs={[{ name: 'Accueil', href: '/' }, { name: 'Solutions', href: '/solutions/' }, { name: "Prestataires d'archivage", href: '/solutions/prestataires-archivage/' }]}
+    offer="inventaire"
+    siblings={SOLUTION_PAGES}
+    siblingsTitle="Solutions"
+>
+    <h2>Plusieurs équipes, aucun doublon</h2>
+    <ul>
+        <li>Chaque téléphone a <strong>sa lettre</strong> : deux équipes ne peuvent jamais produire le même code de boîte.</li>
+        <li>La <strong>lettre de contrôle</strong> détecte les erreurs de recopie d’un code sur le carton.</li>
+        <li>Un même code arrivant avec des photos différentes (téléphone réinstallé, code mal recopié) devient un <strong>conflit</strong> mis de côté, jamais un mélange de boîtes.</li>
+        <li>Les <strong>numéros non reçus</strong> sont signalés par appareil : une boîte photographiée mais jamais transférée ne passe pas inaperçue.</li>
+    </ul>
+
+    <h2>Suivre la production</h2>
+    <ul>
+        <li>Le tableau de bord compte les <strong>photos par agent et par jour</strong> sur les deux dernières semaines.</li>
+        <li>L’avancement de la lecture et le <strong>temps restant estimé</strong> sont affichés en continu.</li>
+        <li>Chaque import produit un <strong>rapport</strong> (boîtes ajoutées, doublons, conflits, numéros manquants).</li>
+    </ul>
+
+    <h2>Un livrable pour le client</h2>
+    <p>
+        L’inventaire Excel (feuilles Boîtes et Documents) se remet tel quel. Les données restent sur le PC installé chez le client,
+        sans transit par vos serveurs ni par un service en ligne, ce qui simplifie l’engagement de confidentialité.
+    </p>
+    <p>Méthode : <a href="/blog/numeroter-etiqueter-boites-archives-sans-erreur/">numéroter et étiqueter des boîtes d’archives sans erreur</a>.</p>
+</Page>

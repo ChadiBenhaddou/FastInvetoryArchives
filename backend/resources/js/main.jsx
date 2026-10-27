@@ -9,7 +9,6 @@ import DevicesPage from './pages/DevicesPage';
 import ImportPage from './pages/ImportPage';
 import BoxesPage from './pages/BoxesPage';
 import BoxDetailPage from './pages/BoxDetailPage';
-import ReviewPage from './pages/ReviewPage';
 import SearchPage from './pages/SearchPage';
 import ConflictsPage from './pages/ConflictsPage';
 import BackupPage from './pages/BackupPage';
@@ -40,7 +39,6 @@ const router = createBrowserRouter([
             { path: 'import', element: <ImportPage /> },
             { path: 'boxes', element: <BoxesPage /> },
             { path: 'boxes/:id', element: <BoxDetailPage /> },
-            { path: 'review', element: <ReviewPage /> },
             { path: 'search', element: <SearchPage /> },
             { path: 'conflicts', element: admin(<ConflictsPage />) },
             { path: 'devices', element: admin(<DevicesPage />) },

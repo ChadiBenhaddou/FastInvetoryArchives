@@ -95,7 +95,11 @@ class Pipeline
         $this->checkBox($doc->box_id);
     }
 
-    /** "review" once no document photo of the box has a step still waiting or running. */
+    /**
+     * "done" once no document photo of the box has a step still waiting or running. No human
+     * validation step: documents with a problem stay flagged (needs_review) for information, and
+     * can be corrected from the box page at any time.
+     */
     public function checkBox(int $boxId): void
     {
         $unfinished = Image::where('images.box_id', $boxId)
@@ -111,7 +115,7 @@ class Pipeline
 
         if (! $unfinished) {
             // Conditional update: safe when several workers finish photos of the same box at once.
-            Box::whereKey($boxId)->where('status', BoxStatus::Processing)->update(['status' => BoxStatus::Review]);
+            Box::whereKey($boxId)->where('status', BoxStatus::Processing)->update(['status' => BoxStatus::Done]);
         }
     }
 

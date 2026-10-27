@@ -2,7 +2,7 @@
 
 Application **100 % hors ligne** pour inventorier des archives en arabe et en français :
 des téléphones Android photographient les dossiers de chaque boîte, un PC sans Internet lit les photos (OCR),
-en extrait les informations utiles avec une IA locale et permet de réviser, chercher et exporter l'inventaire.
+en extrait les informations utiles avec une IA locale et permet de chercher, corriger et exporter l'inventaire.
 
 > **Aucune donnée ne quitte le PC.** Ni le PC ni les téléphones n'ont besoin d'Internet, à aucun moment :
 > pas de compte, pas de nuage, pas de mise à jour automatique, pas de statistiques envoyées.
@@ -37,7 +37,7 @@ Sommaire
   2. Photo du code écrit                               6. Lecture automatique (OCR arabe + français)
   3. Photo de la couverture de chaque dossier          7. Extraction des champs (règles, ou IA locale
      (contrôle de netteté et de lumière immédiat)         en option) : type, date, référence, titre…
-  4. « Exporter » : UN fichier ZIP par session ──câble USB──▶ 8. Révision par une personne
+  4. « Exporter » : UN fichier ZIP par session ──câble USB──▶ 8. Boîte « Terminée », sans validation à faire
                                                        9. Recherche, inventaire Excel, sauvegarde
 ```
 
@@ -45,9 +45,10 @@ Sommaire
   la lettre identifie le téléphone, le numéro est donné par le téléphone, la dernière lettre est une
   **lettre de contrôle** qui détecte les erreurs de recopie (un chiffre faux, deux chiffres inversés,
   une mauvaise lettre d'appareil). Les lettres O, I, S, B et Z ne sont jamais utilisées (trop proches de 0, 1, 5, 8, 2).
-- Le PC compare le code **photographié** sur la boîte au code **enregistré** : la personne qui révise voit
-  les deux côte à côte.
-- Un document est **cherchable et prêt à réviser moins d'une seconde après sa lecture** : ses champs (type, date,
+- La page de chaque boîte montre la **photo du code écrit** sur la boîte à côté du code **enregistré** : en cas
+  d'erreur de recopie, un administrateur corrige le code.
+- Un document est **cherchable moins d'une seconde après sa lecture**, et la boîte **Terminée** dès que ses photos
+  sont lues : il n'y a pas d'étape de validation par une personne. Ses champs (type, date,
   référence, titre…) sont trouvés par des règles. L'IA, plus lente, peut être activée en option ([§ 13](#13-réglages-avancés)).
 
 ## 2. Matériel nécessaire
@@ -67,14 +68,14 @@ Le PC est prévu pour ne faire que ce travail. Ordres de grandeur mesurés sur u
 | Étape | Vitesse | Par jour (24 h) |
 |---|---|---|
 | Import (vérification + copie) | quelques secondes par boîte | — |
-| Lecture (OCR Windows, [§ 4.4](#44-ocr-windows-fortement-conseillé)) + champs par règles + indexation | **~0,8 s par photo**, de l'import à « À réviser » (3 photos en parallèle, PC sans autre travail) | ~100 000 photos |
+| Lecture (OCR Windows, [§ 4.4](#44-ocr-windows-fortement-conseillé)) + champs par règles + indexation | **~0,8 s par photo**, de l'import à « Terminée » (3 photos en parallèle, PC sans autre travail) | ~100 000 photos |
 | Même chose avec PaddleOCR (OCR Windows absent, ou Ubuntu) | ~6 à 15 s par photo (2 en parallèle) | ~10 000 photos |
 | Extraction par l'IA, si elle est activée (`LLM_ENABLED=true`, [§ 13](#13-réglages-avancés)) | ~1 à 2,5 min par document | ~700 à 1 300 documents |
 
 Par défaut l'IA est **désactivée** : le type de document, la date, la référence, le titre, les organismes et
 les personnes sont trouvés par des règles (français et arabe) en quelques millisecondes, et chaque boîte passe
-« À réviser » dès que ses photos sont lues. Les valeurs sont toujours prises dans le texte lui-même ; ce qui
-n'est pas trouvé reste vide pour la personne qui révise. La vitesse dépend du PC : des programmes ouverts
+« Terminée » dès que ses photos sont lues. Les valeurs sont toujours prises dans le texte lui-même ; ce qui
+n'est pas trouvé reste vide (et peut être complété depuis la page de la boîte). La vitesse dépend du PC : des programmes ouverts
 (navigateurs, éditeurs…) la divisent facilement par deux.
 
 ## 3. Contenu de la clé USB
@@ -92,6 +93,13 @@ dépassent 4 Go : FAT32 ne convient pas).
 | `SHA256SUMS` | empreintes : l'installeur vérifie que rien n'a été abîmé pendant la copie |
 
 ## 4. Installer le PC (Windows)
+
+Deux façons, au choix :
+
+- **avec Docker** (§ 4.1 à 4.4) : Docker Desktop, WSL et la virtualisation dans le BIOS ;
+- **sans Docker, mode portable** ([§ 4.5](#45-sans-docker--mode-portable)) : seul **Python** est installé, tout le
+  reste est un dossier à copier, démarré par **un seul double-clic**. Plus simple, et sans la licence de Docker
+  Desktop ([§ 14](#14-licences)).
 
 Compter environ une heure, dont la plupart en attente. Toutes les étapes se font **sans Internet**.
 
@@ -197,9 +205,128 @@ HTML (l'arabe s'y affiche de droite à gauche) :
 `C:\ArchiveInventory\app\windows-ocr\venv\Scripts\python.exe -X utf8 C:\ArchiveInventory\app\windows-ocr\compare.py C:\ArchiveInventory\storage\A-0123-N --html comparaison.html`
 
 **Au quotidien** : rien à faire. Le moteur utilisé est inscrit pour chaque page (`windows-oneocr` ou `paddle`) ;
-les pages lues avec une confiance faible restent signalées « à réviser ». Journal du service :
+les pages lues avec une confiance faible sont signalées. Journal du service :
 `app\windows-ocr\logs\ocr-service.log`. Pour revenir à PaddleOCR : `OCR_ENGINE=paddle` dans `app\.env`, puis
 **Inventaire - Arrêter** / **Démarrer** ; pour retirer le service : `setup.ps1 -Uninstall`.
+
+### 4.5 Sans Docker : mode portable
+
+La même application, sans Docker ni WSL ni réglage du BIOS : les programmes (PHP, nginx, Meilisearch, les deux
+OCR) sont **déjà dans le dossier**, rien n'est installé sauf Python. La base de données est un fichier SQLite.
+**Toutes les données sont dans un seul dossier, `donnees\`** (base, photos, index de recherche, clés) : c'est ce
+dossier qui passe d'un PC à l'autre (§ 4.6). Les dossiers d'import (`import\`, `imported\`, `failed\`) et
+`backups\` sont comme avec Docker (§ 4.3).
+
+**Installation (une seule fois)** — clé USB `ArchiveInventory-<version>-portable` :
+
+1. Copier **tout le dossier** sur le PC, par exemple vers `C:\ArchiveInventory` (chemin **sans espace ni accent**).
+   Ne pas démarrer l'application depuis la clé elle-même : ses données seraient sur la clé.
+2. Installer `prerequis\python-3.12.10-amd64.exe` en cochant **Add python.exe to PATH**.
+3. Pour l'OCR Windows (§ 4.4) : mettre à jour l'Outil Capture d'écran depuis le Microsoft Store **avant** de couper
+   le réseau. Rien d'autre à faire : ses fichiers sont copiés automatiquement au premier démarrage.
+
+**Démarrer : double-clic sur `Demarrer.bat`.** C'est la seule commande : elle vérifie le PC, crée au premier
+lancement les paramètres, la base et le compte **admin** (le mot de passe est demandé dans la fenêtre), démarre
+tout, puis ouvre http://localhost dans le navigateur. **Laisser la fenêtre ouverte** (on peut la réduire) : la
+fermer arrête l'application. Un programme qui s'arrête est redémarré tout seul.
+
+| Fichier | |
+|---|---|
+| `Demarrer.bat` | démarre tout (et ouvre le navigateur si c'est déjà démarré) |
+| `Arreter.bat` | arrête tout proprement (les photos en cours de lecture sont terminées d'abord) |
+| `Sauvegarder.bat` | sauvegarde vers un disque USB (§ 10) |
+| `Restaurer.bat E:\ArchiveInventory-Sauvegarde` | restauration, application arrêtée (§ 10) |
+| `Verifier.bat` | vérification complète avec un export d'exemple (§ 6), application démarrée |
+| `Envoyer-donnees.bat` / `Recevoir-donnees.bat` | passer les données à un autre PC (§ 4.6) |
+| `Autoriser-reseau.bat` | ouvrir l'application aux autres PC du réseau local listés dans `PC_AUTORISES` (§ 4.7) |
+| `donnees\` | **les données** : `base\archive.sqlite`, `photos\<boîte>\`, `recherche\`, `cles.env` — ne pas modifier |
+| `parametres.env` | réglages **de ce PC** (port, nombre de lectures en parallèle, `PC_NAME`…), créé au premier démarrage |
+| `systeme\` | ce qui est propre à ce PC : journaux (`systeme\journaux\`), fichiers de l'OCR Windows, caches |
+
+Pour démarrer avec la session Windows : clic droit sur `Demarrer.bat` → *Créer un raccourci*, puis déplacer le
+raccourci dans le dossier qui s'ouvre avec **Win+R** → `shell:startup`.
+
+**Différences avec Docker** : pas d'isolement réseau des programmes (ils n'écoutent que sur le PC lui-même,
+127.0.0.1 ; seule la page web peut être ouverte aux PC listés du réseau local, § 4.7) ; pas de Tesseract (troisième OCR de secours) ; l'IA locale (§ 13) n'est pas
+disponible. Si le port 80 est déjà pris (par exemple par l'application Docker), mettre `HTTP_PORT=8080` dans `parametres.env`.
+
+**Mise à jour** : `Arreter.bat`, remplacer les dossiers `app\` et `runtime\` et les fichiers `.bat` par ceux de la
+nouvelle clé (ne pas toucher à `donnees\`, aux autres dossiers ni à `parametres.env`), puis `Demarrer.bat` (la base
+est mise à jour automatiquement). Faire une sauvegarde USB avant. Mettre à jour **tous les PC** à la même version.
+
+### 4.6 Deux PC : passer les données de l'un à l'autre
+
+> Si les PC sont reliés par un **réseau local**, préférer le § 4.7 : un seul PC garde les données, les autres
+> ouvrent l'application dans leur navigateur. Rien à copier, tout le monde travaille en même temps.
+
+Pour des PC **sans réseau entre eux**, utilisés **l'un après l'autre** (on travaille sur le PC 1, puis on continue sur le PC 2) : les données
+du PC qui a travaillé en dernier **remplacent** celles de l'autre. Ce n'est pas une fusion : si les deux PC
+travaillent en même temps, le travail de celui qui reçoit est perdu (l'application prévient, voir plus bas).
+
+**Avec les deux fichiers fournis (conseillé)** — seules les photos nouvelles sont copiées, l'application est
+arrêtée pendant la copie puis redémarrée toute seule :
+
+1. Sur le PC qui a travaillé : brancher une clé USB, double-clic sur **`Envoyer-donnees.bat`**, choisir la clé. Les
+   données sont copiées dans `<clé>\ArchiveInventory-Donnees\`.
+2. Sur l'autre PC : brancher la clé, double-clic sur **`Recevoir-donnees.bat`**, choisir la clé, taper `REMPLACER`.
+   La base que ce PC avait est d'abord gardée dans `backups\avant-reception-<date>\`.
+
+**À la main** : `Arreter.bat` sur les deux PC, puis copier le dossier `donnees` du premier PC à la place du dossier
+`donnees` du second (par une clé ou un disque), puis `Demarrer.bat`. Toute la copie est refaite à chaque fois
+(photos comprises) : plus long que les deux fichiers ci-dessus.
+
+Ce que l'application vérifie :
+
+- **au démarrage** avec des données venant d'un autre PC : elle l'indique (« Données venant du PC … ») et contrôle
+  la base ; si la copie a été faite **application démarrée** sur l'autre PC, elle prévient que les dernières
+  minutes de travail peuvent manquer, et refuse de démarrer si la base est abîmée (recopier, application arrêtée) ;
+- **à la réception** : refuse une copie interrompue ou faite application démarrée, et prévient en rouge si ce PC a
+  été utilisé **après** l'autre (son travail récent serait perdu) ;
+- **versions** : des données d'une version plus récente sont refusées (mettre d'abord ce PC à jour) ; d'une version
+  différente, l'index de recherche est reconstruit automatiquement.
+
+Les comptes, mots de passe et codes PIN des téléphones suivent les données (`donnees\cles.env`). Chaque PC garde
+ses réglages (`parametres.env`) et ses fichiers d'OCR Windows. Donner un nom à chaque PC dans `parametres.env`
+(`PC_NAME=Bureau 1`) pour des messages plus clairs.
+
+> Le dossier `donnees` contient **toutes les données confidentielles** : la clé qui le transporte se range sous clé
+> comme une sauvegarde (§ 10), et s'efface ou se chiffre (BitLocker To Go) après usage.
+
+### 4.7 Plusieurs PC sur le réseau local (conseillé)
+
+Un PC **serveur** a l'application et les données (installé comme au § 4.5). Les autres PC n'installent **rien** :
+ils ouvrent l'application dans leur navigateur, par l'adresse du serveur. Tout le monde travaille **en même
+temps** sur les **mêmes données** : pas de copie, pas de risque d'écraser le travail d'un autre.
+
+**À faire une fois, sur le serveur :**
+
+1. Noter l'adresse IP de chaque PC qui doit avoir accès (sur ce PC : touche Windows → `cmd` → `ipconfig` →
+   ligne *Adresse IPv4*, par exemple `192.168.1.11`). Lui donner une **adresse fixe** (réglage de la carte réseau
+   ou du routeur), sinon elle peut changer et l'accès sera refusé.
+2. Dans `C:\ArchiveInventory\parametres.env`, ligne `PC_AUTORISES=` : les adresses séparées par des virgules,
+   par exemple `PC_AUTORISES=192.168.1.11, 192.168.1.12` (ou une plage : `192.168.1.0/24`).
+3. Double-clic sur **`Autoriser-reseau.bat`** et accepter la demande d'administrateur : il ouvre le pare-feu de
+   Windows pour ces adresses seulement. Le refaire après chaque changement de `PC_AUTORISES` ou de `HTTP_PORT`.
+4. `Arreter.bat` puis `Demarrer.bat`. La fenêtre affiche l'adresse à taper sur les autres PC, par exemple
+   **`http://192.168.1.10`**.
+
+**Sur chaque autre PC :** ouvrir le navigateur à cette adresse (l'ajouter aux favoris) et se connecter avec son
+compte (§ 9). Le dossier surveillé `import\` est sur le serveur : depuis un autre PC, importer en glissant le
+ZIP sur la page **Import**.
+
+**Sécurité** — ce qui protège les données :
+
+- seules les adresses de `PC_AUTORISES` reçoivent une réponse, deux fois vérifiées : par le pare-feu de Windows et
+  par l'application (tout autre appareil reçoit « 403 Forbidden », avant même la page de connexion) ; puis il faut
+  un compte et son mot de passe ;
+- seule la page web est ouverte au réseau : la base, la recherche et l'OCR restent accessibles au serveur seul ;
+- les échanges ne sont pas chiffrés (`http`) : réservé à un **réseau fermé** (sans Internet, sans Wi-Fi
+  visiteurs). Ne pas mettre des adresses d'un réseau partagé ;
+- le serveur doit rester **allumé et démarré** pendant que les autres travaillent (`Demarrer.bat` au démarrage de
+  la session, § 4.5). Les sauvegardes (§ 10) se font sur le serveur.
+
+Pour revenir à « ce PC seulement » : vider `PC_AUTORISES`, `Autoriser-reseau.bat` (retire la règle du pare-feu),
+puis `Arreter.bat` / `Demarrer.bat`.
 
 ## 5. Installer le PC (Ubuntu)
 
@@ -286,23 +413,21 @@ Une seule boîte est ouverte à la fois. Pour abandonner une boîte (code mal é
 Tant que l'étape 5 n'est pas faite, le téléphone garde tout : en cas de problème on peut **Ré-exporter**.
 Importer deux fois le même fichier est sans danger (« Déjà importé », rien n'est modifié).
 
-### 8.3 Au bureau : révision
+### 8.3 Au bureau : rien à valider
 
-Après l'import, chaque boîte passe par **En traitement** puis **À réviser** ; le **Tableau de bord** montre
-l'avancement et le temps restant estimé.
+Après l'import, chaque boîte passe par **En traitement** puis **Terminée**, toute seule, dès que ses photos sont
+lues : **il n'y a pas d'étape de validation** document par document. Le **Tableau de bord** montre l'avancement
+et le temps restant estimé.
 
-Page **Révision** (une boîte après l'autre) :
+Les documents qui posent problème restent **signalés**, pour information : *Lecture (OCR) peu sûre*, *Manuscrit
+probable*, *Aucun texte détecté*, *Extraction peu sûre*… Leur nombre est sur le tableau de bord, dans la liste
+des boîtes (colonne *Signalés*), dans la recherche et dans l'inventaire Excel (colonnes *Signalé* et *Motifs*).
 
-1. **Vérifier le code** : la photo du code écrit est à côté du code enregistré. S'ils diffèrent, un administrateur
-   corrige le code de la boîte (les photos suivent, tout est tracé dans le journal).
-2. Pour chaque document : la photo à gauche, le texte lu et les champs extraits à droite (type, date, référence,
-   titre, personnes, organismes, mots-clés). Corriger si besoin.
-   Les documents à regarder en priorité sont signalés : *Lecture (OCR) peu sûre*, *Manuscrit probable*,
-   *Aucun texte détecté*, *Extraction peu sûre*…
-3. **Valider et suivant**. Raccourcis clavier : `Ctrl+Entrée` valider et suivant, `Ctrl+S` enregistrer,
-   `Alt+←` / `Alt+→` document précédent / suivant.
-
-Quand tous ses documents sont validés, la boîte passe à **Terminée**.
+**Corriger, quand on le souhaite** : page **Boîtes** → la boîte → cliquer sur un document. La photo est à gauche,
+le texte lu et les champs à droite (type, date, référence, titre, personnes, organismes, mots-clés) ; modifier puis
+**Enregistrer la correction**. La correction est tracée (qui, quand, avant / après), la recherche est mise à jour
+et le document n'est plus signalé. Sur la même page, la photo du code écrit est à côté du code enregistré : s'ils
+diffèrent, un administrateur corrige le code de la boîte (les photos suivent, tout est tracé dans le journal).
 
 ### 8.4 Recherche et inventaire
 
@@ -324,7 +449,7 @@ Page **Utilisateurs** (administrateur) : créer un compte par personne.
 
 | Rôle | Peut |
 |---|---|
-| **Réviseur** | importer, réviser, chercher, consulter |
+| **Réviseur** | importer, chercher, consulter, corriger les documents |
 | **Administrateur** | tout, plus : appareils et codes PIN, utilisateurs, correction de codes de boîte, conflits, export Excel, sauvegardes |
 
 Un compte peut être **désactivé** (jamais supprimé, pour garder le journal). Toutes les modifications sont
@@ -367,6 +492,11 @@ les photos sont recopiées, la clé reprise, l'index reconstruit.
 Revenir en arrière (mauvaise sauvegarde choisie…) ou reprendre une sauvegarde de nuit du PC :
 `restore.ps1 -From C:\ArchiveInventory\backups -Backup <date>` (les photos du PC ne sont pas touchées).
 Ubuntu : `sudo bash /srv/archive/app/scripts/restore.sh /media/<disque>/ArchiveInventory-Sauvegarde`.
+
+**Mode portable** (§ 4.5) : `Sauvegarder.bat` fait la même sauvegarde (la base y est `database.sqlite.gz`) ;
+pour restaurer, `Arreter.bat` puis `Restaurer.bat E:\ArchiveInventory-Sauvegarde` (option `-Backup <date>`).
+La base actuelle est d'abord copiée dans `backups\avant-restauration-<date>\`. Les sauvegardes du mode Docker
+(MySQL) et du mode portable (SQLite) ne sont pas interchangeables.
 
 ## 11. Mise à jour
 
@@ -416,7 +546,7 @@ Les réglages sont dans `C:\ArchiveInventory\app\.env` (à modifier avec le Bloc
 **L'IA est désactivée par défaut** (`LLM_ENABLED=false` dans `.env`) : sur processeur seul elle prend 1 à
 2,5 minutes par document, contre moins d'une seconde pour tout le reste. Les champs sont alors trouvés par des
 règles. L'activer (`LLM_ENABLED=true`, puis **Inventaire - Arrêter** / **Démarrer**) donne de meilleurs titres,
-des mots-clés et un résumé, mais chaque boîte attend alors l'IA avant de passer « À réviser ». Pour réextraire
+des mots-clés et un résumé, mais chaque boîte attend alors l'IA avant de passer « Terminée ». Pour réextraire
 avec le réglage choisi les documents déjà traités : `docker compose exec app php artisan archive:reprocess --all --extraction --wait`.
 
 Deux modèles sont fournis, tous deux sous licence libre autorisant l'usage professionnel :
@@ -430,8 +560,7 @@ Deux modèles sont fournis, tous deux sous licence libre autorisant l'usage prof
 
 Quel que soit le modèle, l'IA est contrainte par un schéma (elle ne peut répondre qu'au format attendu, avec
 un type de document pris dans la liste), et **toute valeur absente du texte du document est écartée** —
-le modèle ne peut pas « inventer » une date, une référence ou un nom. Les documents incertains sont signalés
-pour la révision.
+le modèle ne peut pas « inventer » une date, une référence ou un nom. Les documents incertains sont signalés.
 
 Mesurer la vitesse réelle sur le PC (sur les derniers documents importés, rien n'est modifié) :
 
@@ -484,6 +613,8 @@ Tous les autres composants sont libres et utilisables par une administration, sa
 | MySQL Community Server | GPL v2 |
 | Laravel, React, Tailwind CSS, Capacitor | MIT |
 | Docker Engine (Ubuntu) | Apache 2.0 |
+| Mode portable : PHP, nginx, SQLite | PHP License 3.01, BSD 2 clauses, domaine public |
+| Mode portable : environnement Visual C++ (`vcruntime140.dll`, `msvcp140.dll` à côté de PHP) | redistribuable Microsoft, copie à côté du programme autorisée |
 
 ---
 

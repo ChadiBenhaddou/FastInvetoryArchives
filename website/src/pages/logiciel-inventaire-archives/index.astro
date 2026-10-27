@@ -1,0 +1,63 @@
+---
+import Page from '../../layouts/Page.astro';
+import Screenshot from '../../components/Screenshot.astro';
+import Faq from '../../components/Faq.astro';
+import { PRODUCT_PAGES } from '../../config/nav.mjs';
+import { faqLd, softwareLd } from '../../lib/schema.mjs';
+import dashboard from '../../assets/screenshots/desktop/dashboard.png';
+import boxes from '../../assets/screenshots/desktop/boxes.png';
+
+const faq = [
+    { q: 'Le logiciel envoie-t-il des données sur Internet ?', a: 'Non. Il fonctionne sans aucune connexion : pas de compte, pas de nuage, pas de statistiques envoyées. Les photos vont du téléphone au PC par câble USB.' },
+    { q: 'Les documents manuscrits sont-ils lus ?', a: 'Mal. Ils sont signalés « Manuscrit probable » pour que vous sachiez qu’il faut les vérifier ou les compléter à la main. Le logiciel est fait pour les documents imprimés en arabe et en français.' },
+    { q: 'Peut-on corriger une erreur de lecture ?', a: 'Oui, à tout moment, depuis la page de la boîte : le texte et les champs sont modifiables. Chaque correction est enregistrée (qui, quand, valeur avant et après) et la recherche est mise à jour.' },
+];
+---
+
+<Page
+    title="Logiciel d'inventaire des archives hors ligne (arabe et français)"
+    h1="Le logiciel d’inventaire des archives, hors ligne"
+    description="Logiciel d'inventaire d'archives papier sans Internet : capture sur Android, import contrôlé, OCR arabe et français, recherche et inventaire Excel."
+    lead="Une chaîne complète, de la boîte sur l’étagère à l’inventaire Excel : téléphones Android pour photographier, un PC sans Internet pour lire, classer et chercher. Les données ne quittent jamais vos locaux."
+    breadcrumbs={[{ name: 'Accueil', href: '/' }, { name: 'Le logiciel', href: '/logiciel-inventaire-archives/' }]}
+    jsonLd={[softwareLd(), faqLd(faq)]}
+    offer="inventaire"
+    siblings={PRODUCT_PAGES}
+    siblingsTitle="Le logiciel en détail"
+>
+    <h2>Comment ça marche</h2>
+    <ol>
+        <li><strong>Sur le terrain</strong>, chaque téléphone donne un code unique à la boîte (par exemple <code>A-0123-N</code>). L’agent l’écrit sur la boîte, le photographie, puis photographie la couverture ou la première page de chaque dossier. <a href="/logiciel-inventaire-archives/capture-android/">La capture sur téléphone</a></li>
+        <li><strong>En fin de session</strong>, le téléphone produit un seul fichier ZIP, copié sur le PC par câble USB. Le PC vérifie chaque photo, écarte les doublons, met de côté les conflits et signale les numéros de boîtes non reçus. <a href="/logiciel-inventaire-archives/import-et-controle/">L’import et le contrôle</a></li>
+        <li><strong>Le PC lit chaque page</strong> en arabe et en français et en extrait le type de document, la date, la référence, le titre, les personnes et les organismes. <a href="/logiciel-inventaire-archives/ocr-arabe-francais/">La lecture OCR</a></li>
+        <li><strong>La boîte est terminée</strong> dès que ses photos sont lues, sans validation document par document. Les documents douteux sont signalés et corrigeables quand vous le souhaitez.</li>
+        <li><strong>Vous cherchez et exportez</strong> : recherche plein texte en arabe et en français, filtres, inventaire Excel. <a href="/logiciel-inventaire-archives/recherche-et-export/">La recherche et l’inventaire</a></li>
+    </ol>
+
+    <Screenshot src={dashboard} alt="Tableau de bord : avancement du traitement, boîtes terminées, documents signalés, services locaux" caption="Le tableau de bord : avancement, temps restant estimé, documents signalés, état des services" />
+
+    <h2>Ce que fait le logiciel</h2>
+    <table>
+        <thead><tr><th>Étape</th><th>Fonctionnalités</th></tr></thead>
+        <tbody>
+            <tr><td>Capture</td><td>Code de boîte avec lettre de contrôle, photo du code écrit, contrôle de netteté et de lumière, recadrage automatique, emplacement (salle, étagère, rangée), interface arabe ou française, mode avion</td></tr>
+            <tr><td>Import</td><td>Glisser-déposer ou dossier surveillé, empreinte SHA-256 de chaque photo, doublons ignorés, conflits mis de côté, numéros manquants signalés, rapport d’import</td></tr>
+            <tr><td>Lecture</td><td>OCR arabe et français sur le PC, redressement de l’orientation, extraction des champs par règles en quelques millisecondes</td></tr>
+            <tr><td>Suivi</td><td>Tableau de bord, photos par agent et par jour, documents signalés (lecture peu sûre, manuscrit, sans texte)</td></tr>
+            <tr><td>Recherche</td><td>Plein texte arabe et français, tolérance aux fautes et aux variantes d’écriture arabe, filtres, mots surlignés</td></tr>
+            <tr><td>Inventaire</td><td>Export Excel (feuilles Boîtes et Documents) et CSV</td></tr>
+            <tr><td>Administration</td><td>Comptes Réviseur et Administrateur, journal d’audit, codes PIN des téléphones, sauvegarde chaque nuit et vers disque USB, restauration</td></tr>
+        </tbody>
+    </table>
+
+    <Screenshot src={boxes} alt="Liste des boîtes avec statut, emplacement et nombre de documents signalés" caption="La liste des boîtes, filtrable par statut, salle, agent ou appareil" />
+
+    <h2>Ses limites, dites franchement</h2>
+    <ul>
+        <li>Les documents <strong>manuscrits</strong> sont mal lus : ils sont signalés, pas transcrits de façon fiable.</li>
+        <li>La lecture automatique peut se tromper : les pages à confiance faible sont signalées et se corrigent depuis la page de la boîte.</li>
+        <li>La vitesse dépend du PC et du moteur de lecture. Le moteur OCR de Windows, le plus rapide, est optionnel et sa licence doit être validée par votre service juridique ; le moteur libre PaddleOCR est plus lent. Détails sur <a href="/logiciel-inventaire-archives/ocr-arabe-francais/">la page OCR</a>.</li>
+        <li>Une IA locale (optionnelle, installation avec Docker) améliore les titres et ajoute mots-clés et résumé, mais prend 1 à 2,5 minutes par document sur processeur seul.</li>
+    </ul>
+    <Faq slot="after" items={faq} />
+</Page>

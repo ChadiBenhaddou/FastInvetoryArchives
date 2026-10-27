@@ -22,7 +22,7 @@ Contenu de l'exemple K :
 
 1. **Appareils** : enregistrer la lettre **K** (ou **A**).
 2. **Import** : glisser le ZIP sur la page, ou le copier dans le dossier surveillé `C:\ArchiveInventory\import`.
-3. Suivre l'avancement sur le **Tableau de bord**, puis **Révision** et **Recherche** (essayer « Benali »,
+3. Suivre l'avancement sur le **Tableau de bord**, puis **Boîtes** et **Recherche** (essayer « Benali »,
    « الداخلية », « mutation »).
 
 Pour retirer les exemples ensuite : les boîtes K-… restent dans l'inventaire ; il est plus simple de les essayer

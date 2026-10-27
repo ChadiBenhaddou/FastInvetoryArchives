@@ -1,0 +1,32 @@
+---
+// /blog/ then /blog/2/, /blog/3/… (12 articles per page). Each page is canonical to itself.
+import Base from '../../layouts/Base.astro';
+import PostList from '../../components/PostList.astro';
+import { CATEGORIES, publishedPosts } from '../../lib/posts.mjs';
+
+export async function getStaticPaths({ paginate }) {
+    return paginate(await publishedPosts(), { pageSize: 12 });
+}
+
+const { page } = Astro.props;
+const all = await publishedPosts();
+const categories = Object.entries(CATEGORIES)
+    .map(([key, label]) => ({ key, label, count: all.filter((p) => p.data.category === key).length }))
+    .filter((c) => c.count >= 3);
+const suffix = page.currentPage > 1 ? ` — page ${page.currentPage}` : '';
+---
+
+<Base
+    title={`Guides et articles sur la gestion des archives au Maroc${suffix}`}
+    description={`Guides pratiques sur l'inventaire, le classement, la numérisation et la recherche des archives en arabe et en français, et sur les applications sur mesure${suffix}.`}
+    breadcrumbs={[{ name: 'Accueil', href: '/' }, { name: 'Guides et articles', href: '/blog/' }]}
+>
+    <h1 class="text-3xl font-bold text-ink sm:text-4xl">Guides et articles</h1>
+    <p class="mt-4 max-w-3xl text-lg text-stone-600">Méthodes et retours d’expérience sur l’inventaire et la gestion des archives, l’OCR des documents arabes et les applications sur mesure. Voir aussi les <a href="/guides/" class="font-medium text-brand-700 hover:underline">guides classés par thème</a>.</p>
+    {categories.length > 0 && (
+        <ul class="mt-6 flex flex-wrap gap-2 text-sm">
+            {categories.map((c) => <li><a href={`/blog/categorie/${c.key}/`} class="rounded-full border border-stone-300 bg-white px-3 py-1 hover:border-brand-500">{c.label} ({c.count})</a></li>)}
+        </ul>
+    )}
+    <div class="mt-10"><PostList posts={page.data} page={page} /></div>
+</Base>

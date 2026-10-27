@@ -1,0 +1,47 @@
+---
+import Page from '../../layouts/Page.astro';
+import Screenshot from '../../components/Screenshot.astro';
+import { PRODUCT_PAGES } from '../../config/nav.mjs';
+import searchAr from '../../assets/screenshots/desktop/search-ar.png';
+import searchFr from '../../assets/screenshots/desktop/search-fr.png';
+import boxes from '../../assets/screenshots/desktop/boxes.png';
+---
+
+<Page
+    title="Recherche documentaire arabe et inventaire Excel des archives"
+    h1="Recherche et inventaire Excel"
+    description="Recherche plein texte dans les archives en arabe et en français, tolérante aux variantes d'écriture arabe, filtres, inventaire Excel et CSV."
+    lead="L’inventaire n’a de valeur que si l’on retrouve les dossiers. La recherche porte sur tout le texte lu et sur les champs extraits, en arabe comme en français."
+    breadcrumbs={[{ name: 'Accueil', href: '/' }, { name: 'Le logiciel', href: '/logiciel-inventaire-archives/' }, { name: 'Recherche et export', href: '/logiciel-inventaire-archives/recherche-et-export/' }]}
+    offer="inventaire"
+    siblings={PRODUCT_PAGES}
+    siblingsTitle="Le logiciel en détail"
+>
+    <h2>Une recherche faite pour l’arabe</h2>
+    <p>
+        Un même mot s’écrit souvent de plusieurs façons dans les documents arabes, et l’OCR ajoute ses propres variations. La
+        recherche les rapproche : hamza (أ / إ / ا), ta marbouta et ha (ة / ه), alif maqsoura et ya (ى / ي), tatweel, voyelles et
+        chiffres arabes-indiens. Elle tolère aussi les fautes de frappe et les accents en français.
+    </p>
+    <Screenshot src={searchAr} alt="Recherche en arabe : documents trouvés avec les mots surlignés" caption="Recherche en arabe, mots trouvés surlignés" />
+
+    <h2>Filtres et résultats</h2>
+    <ul>
+        <li>Filtres par <strong>type de document</strong>, <strong>période</strong> (années), <strong>salle</strong>, <strong>agent</strong> et <strong>boîte</strong>.</li>
+        <li>Mots trouvés <strong>surlignés</strong> dans le titre et le texte ; un clic ouvre la boîte, sa photo et ses champs.</li>
+        <li>Les documents signalés (lecture peu sûre, manuscrit…) sont marqués dans les résultats.</li>
+    </ul>
+    <Screenshot src={searchFr} alt="Recherche en français par nom de personne" caption="Recherche en français" />
+
+    <h2>L’inventaire Excel</h2>
+    <p>Un administrateur télécharge l’inventaire complet en un clic :</p>
+    <table>
+        <thead><tr><th>Feuille</th><th>Colonnes</th></tr></thead>
+        <tbody>
+            <tr><td>Boîtes</td><td>Code, statut, appareil, agent, salle, étagère, rangée, photos, documents, signalés, dates de création et de fermeture, import</td></tr>
+            <tr><td>Documents</td><td>Boîte, emplacement, n° de photo, type, titre, date, référence, personnes, organismes, mots-clés, résumé, langue, manuscrit, confiances OCR et extraction, signalé et motifs, corrigé par et le, texte lu</td></tr>
+        </tbody>
+    </table>
+    <p>Le même inventaire existe en CSV, pour l’importer dans un autre outil.</p>
+    <Screenshot src={boxes} alt="Liste des boîtes filtrable" caption="La liste des boîtes" />
+</Page>

@@ -1,0 +1,4 @@
+# Python packages of the portable Windows mode, installed by build.py into runtime\python
+# (pip install --target): the PC only needs Python 3.12, nothing is installed there.
+-r ../ocr-worker/requirements.txt
+-r ../windows-ocr/requirements.txt

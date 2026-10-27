@@ -1,0 +1,42 @@
+---
+import Page from '../../layouts/Page.astro';
+import Screenshot from '../../components/Screenshot.astro';
+import { CUSTOM_PAGES } from '../../config/nav.mjs';
+import { serviceLd } from '../../lib/schema.mjs';
+import boxDetail from '../../assets/screenshots/desktop/box-detail.png';
+
+const description = "OCR sur mesure pour documents arabes et français : extraction automatique de données, IA installée chez vous, recherche adaptée à l'arabe, sans cloud.";
+---
+
+<Page
+    title="OCR et extraction de données de documents arabes, sur mesure"
+    h1="OCR et extraction de documents arabes"
+    description={description}
+    lead="Formulaires, factures, décisions, dossiers : extraire automatiquement les bonnes données d’un document en arabe ou en français, sans envoyer vos documents à un service en ligne."
+    breadcrumbs={[{ name: 'Accueil', href: '/' }, { name: 'Applications sur mesure', href: '/applications-sur-mesure/' }, { name: 'OCR et extraction de documents arabes', href: '/applications-sur-mesure/ocr-extraction-documents-arabes/' }]}
+    jsonLd={[serviceLd({ name: 'OCR et extraction de données de documents arabes', description, path: '/applications-sur-mesure/ocr-extraction-documents-arabes/' })]}
+    offer="sur-mesure"
+    siblings={CUSTOM_PAGES}
+    siblingsTitle="Types de projets"
+>
+    <h2>Ce que nous savons faire</h2>
+    <ul>
+        <li><strong>Lire</strong> des documents imprimés en arabe et en français sur vos machines, avec des moteurs libres (PaddleOCR, Tesseract), y compris des pages mal orientées.</li>
+        <li><strong>Extraire des champs</strong> par des règles écrites pour vos documents : rapides, prévisibles, et qui ne remplissent jamais un champ avec une valeur absente du texte.</li>
+        <li><strong>Utiliser une IA installée chez vous</strong> quand les règles ne suffisent pas, contrainte à un format de réponse fixe et à des valeurs présentes dans le document.</li>
+        <li><strong>Rendre le tout cherchable</strong>, avec une recherche qui comprend les variantes d’écriture arabe.</li>
+        <li><strong>Signaler ce qui est douteux</strong> plutôt que de le cacher : confiance faible, manuscrit, page vide.</li>
+    </ul>
+    <Screenshot src={boxDetail} alt="Champs extraits automatiquement d’un arrêté : type, date, référence, personnes, organismes" caption="Exemple : les champs extraits d’une décision dans le logiciel d’inventaire" />
+
+    <h2>Les limites, à connaître avant de lancer un projet</h2>
+    <ul>
+        <li>L’écriture <strong>manuscrite</strong> arabe reste difficile à lire automatiquement de façon fiable.</li>
+        <li>La qualité de lecture dépend de celle des documents et des photos ou scans : un échantillon de vos vrais documents est indispensable pour l’évaluer.</li>
+        <li>Une IA sur processeur seul est lente (de l’ordre de la minute par page dans nos mesures) ; une carte graphique change beaucoup la donne.</li>
+    </ul>
+    <p>
+        C’est pourquoi un projet commence par un <strong>essai sur vos documents</strong>, avec un taux de réussite mesuré, avant
+        toute promesse. Voir aussi : <a href="/blog/ocr-documents-arabes-possibilites-limites/">OCR des documents en arabe, possibilités et limites</a>.
+    </p>
+</Page>

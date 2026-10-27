@@ -1,0 +1,40 @@
+---
+import { MAIN_NAV } from '../config/nav.mjs';
+import { site } from '../config/site.mjs';
+
+const path = Astro.url.pathname;
+const active = (href: string) => path.startsWith(href);
+---
+
+<header class="sticky top-0 z-40 border-b border-stone-200 bg-white/95 backdrop-blur">
+    <div class="mx-auto flex max-w-6xl items-center justify-between gap-4 px-5 py-3">
+        <a href="/" class="flex items-center gap-2.5 font-semibold text-ink" aria-label={`${site.productName} — accueil`}>
+            <svg viewBox="0 0 32 32" class="size-8 shrink-0" aria-hidden="true"><rect width="32" height="32" rx="7" fill="#1c1917" /><path d="M8 11h16v3H8zm1 5h14v8H9z" fill="#f59e0b" /><path d="M13 19h6" stroke="#1c1917" stroke-width="2" stroke-linecap="round" /></svg>
+            <span class="leading-tight sm:whitespace-nowrap">Inventaire rapide<br class="sm:hidden" /> des archives</span>
+        </a>
+        <nav aria-label="Navigation principale" class="hidden xl:block">
+            <ul class="flex items-center gap-1 text-sm">
+                {MAIN_NAV.map((item) => (
+                    <li>
+                        <a href={item.href} class:list={['whitespace-nowrap rounded-md px-3 py-2 hover:bg-stone-100', active(item.href) ? 'font-semibold text-ink' : 'text-stone-600']} aria-current={active(item.href) ? 'page' : undefined}>
+                            {item.label}
+                        </a>
+                    </li>
+                ))}
+            </ul>
+        </nav>
+        <div class="flex items-center gap-2">
+            <a href="/demander-une-demonstration/" class="hidden whitespace-nowrap rounded-md bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700 sm:inline-block">Demander une démonstration</a>
+            <details class="relative xl:hidden">
+                <summary class="flex size-10 cursor-pointer list-none items-center justify-center rounded-md hover:bg-stone-100" aria-label="Menu">
+                    <svg viewBox="0 0 24 24" class="size-6" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" /></svg>
+                </summary>
+                <ul class="absolute end-0 mt-2 w-72 space-y-1 rounded-lg border border-stone-200 bg-white p-2 shadow-lg">
+                    {MAIN_NAV.map((item) => <li><a href={item.href} class="block rounded-md px-3 py-2 hover:bg-stone-100">{item.label}</a></li>)}
+                    <li><a href="/demander-une-demonstration/" class="block rounded-md bg-brand-600 px-3 py-2 font-semibold text-white">Demander une démonstration</a></li>
+                    <li><a href="/contact/#sur-mesure" class="block rounded-md px-3 py-2 hover:bg-stone-100">Parler d'un projet sur mesure</a></li>
+                </ul>
+            </details>
+        </div>
+    </div>
+</header>

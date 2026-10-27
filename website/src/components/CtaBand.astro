@@ -1,0 +1,28 @@
+---
+// Conversion block shown at the end of every page: product demo, or custom project.
+interface Props { offer?: 'inventaire' | 'sur-mesure' | 'both' }
+const { offer = 'both' } = Astro.props;
+---
+
+<section class="mt-16 rounded-2xl bg-ink px-6 py-10 text-white sm:px-10" aria-labelledby="cta-title">
+    {offer === 'sur-mesure' ? (
+        <>
+            <h2 id="cta-title" class="text-2xl font-semibold">Un besoin propre à votre organisation ?</h2>
+            <p class="mt-3 max-w-2xl text-stone-300">Décrivez votre projet : nous l'analysons avec vous avant de proposer une maquette, puis un pilote. Applications développées à la demande, hébergées chez vous.</p>
+            <div class="mt-6 flex flex-wrap gap-3">
+                <a href="/contact/#sur-mesure" class="rounded-md bg-brand-500 px-5 py-3 font-semibold text-ink hover:bg-brand-100">Parler de votre projet sur mesure</a>
+                <a href="/applications-sur-mesure/" class="rounded-md border border-stone-600 px-5 py-3 font-semibold hover:bg-stone-800">Ce que nous développons</a>
+            </div>
+        </>
+    ) : (
+        <>
+            <h2 id="cta-title" class="text-2xl font-semibold">Voir le logiciel sur vos propres boîtes</h2>
+            <p class="mt-3 max-w-2xl text-stone-300">Démonstration sur place ou à distance, puis pilote sur un échantillon de vos archives, sans qu'aucune donnée ne quitte vos locaux.</p>
+            <div class="mt-6 flex flex-wrap gap-3">
+                <a href="/demander-une-demonstration/" class="rounded-md bg-brand-500 px-5 py-3 font-semibold text-ink hover:bg-brand-100">Demander une démonstration</a>
+                <a href="/contact/#devis" class="rounded-md border border-stone-600 px-5 py-3 font-semibold hover:bg-stone-800">Demander un devis ou un pilote</a>
+                {offer === 'both' && <a href="/contact/#sur-mesure" class="rounded-md px-5 py-3 font-semibold text-brand-100 underline-offset-4 hover:underline">Votre besoin est différent ? Projet sur mesure</a>}
+            </div>
+        </>
+    )}
+</section>

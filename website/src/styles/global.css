@@ -1,0 +1,71 @@
+@import 'tailwindcss';
+@import '@fontsource-variable/noto-sans';
+@import '@fontsource-variable/noto-sans-arabic';
+
+/* Same visual language as the product's admin UI (stone + amber, Noto Sans). */
+@theme {
+    --font-sans: 'Noto Sans Variable', 'Noto Sans Arabic Variable', system-ui, sans-serif;
+    --color-brand-50: #fffbeb;
+    --color-brand-100: #fef3c7;
+    --color-brand-500: #f59e0b;
+    --color-brand-600: #d97706;
+    --color-brand-700: #b45309;
+    --color-ink: #1c1917;
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+body {
+    @apply bg-stone-50 text-stone-800 antialiased;
+}
+
+/* Visible keyboard focus everywhere. */
+:focus-visible {
+    @apply outline-2 outline-offset-2 outline-brand-600;
+}
+
+.prose-site {
+    @apply max-w-none text-[1.0625rem] leading-relaxed text-stone-700;
+}
+.prose-site h2 {
+    @apply mt-12 mb-4 scroll-mt-24 text-2xl font-semibold text-ink;
+}
+.prose-site h3 {
+    @apply mt-8 mb-3 scroll-mt-24 text-xl font-semibold text-ink;
+}
+.prose-site p,
+.prose-site ul,
+.prose-site ol,
+.prose-site table,
+.prose-site blockquote {
+    @apply my-5;
+}
+.prose-site ul {
+    @apply list-disc space-y-1.5 ps-6;
+}
+.prose-site ol {
+    @apply list-decimal space-y-1.5 ps-6;
+}
+.prose-site a {
+    @apply font-medium text-brand-700 underline decoration-brand-500/40 underline-offset-2 hover:decoration-brand-700;
+}
+.prose-site strong {
+    @apply font-semibold text-ink;
+}
+.prose-site blockquote {
+    @apply border-s-4 border-brand-500 bg-white px-5 py-3 text-stone-600;
+}
+.prose-site table {
+    @apply w-full border-collapse text-sm;
+}
+.prose-site th {
+    @apply border-b border-stone-300 bg-stone-100 px-3 py-2 text-start font-semibold;
+}
+.prose-site td {
+    @apply border-b border-stone-200 px-3 py-2 align-top;
+}
+.prose-site code {
+    @apply rounded bg-stone-100 px-1.5 py-0.5 text-[0.9em];
+}

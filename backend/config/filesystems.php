@@ -33,7 +33,7 @@ return [
         // Box photos: {box_code}/{sequence}.jpg under the host archive folder.
         'archive' => [
             'driver' => 'local',
-            'root' => rtrim(env('ARCHIVE_ROOT', storage_path('app/archive-dev')), '/').'/storage',
+            'root' => env('ARCHIVE_PHOTOS_PATH', rtrim(env('ARCHIVE_ROOT', storage_path('app/archive-dev')), '/').'/storage'),
             'throw' => true,
             'report' => false,
         ],

@@ -1,0 +1,75 @@
+---
+import Page from '../../layouts/Page.astro';
+import Faq from '../../components/Faq.astro';
+import { CUSTOM_PAGES } from '../../config/nav.mjs';
+import { faqLd, serviceLd } from '../../lib/schema.mjs';
+
+const description = "Développement d'applications sur mesure au Maroc : hors ligne, collecte terrain sur Android, OCR et extraction de documents arabes, IA installée chez vous.";
+const faq = [
+    { q: 'Avez-vous déjà réalisé l’application dont j’ai besoin ?', a: 'Probablement pas telle quelle : chaque application sur mesure est construite à la demande, après une analyse de votre besoin. Ce que nous pouvons montrer, c’est le logiciel d’inventaire des archives, qui réunit déjà la plupart des briques techniques décrites sur cette page.' },
+    { q: 'Où l’application est-elle hébergée ?', a: 'Chez vous, de préférence : sur vos PC ou vos serveurs, sans dépendre d’un service en ligne. C’est un choix à faire ensemble selon vos contraintes de confidentialité et d’exploitation.' },
+    { q: 'Combien coûte un projet ?', a: 'Cela dépend du périmètre. Après l’analyse du besoin, nous proposons un devis pour la maquette et le pilote, puis pour le déploiement. Vous pouvez indiquer un budget indicatif dès le premier message, si vous le souhaitez.' },
+];
+---
+
+<Page
+    title="Développement d'applications sur mesure au Maroc"
+    h1="Applications sur mesure"
+    description={description}
+    lead="Votre besoin ne rentre dans aucun logiciel standard ? L’équipe qui a construit l’inventaire des archives conçoit des applications adaptées à votre façon de travailler, installées chez vous."
+    breadcrumbs={[{ name: 'Accueil', href: '/' }, { name: 'Applications sur mesure', href: '/applications-sur-mesure/' }]}
+    jsonLd={[serviceLd({ name: 'Développement d’applications sur mesure', description, path: '/applications-sur-mesure/' }), faqLd(faq)]}
+    offer="sur-mesure"
+    siblings={CUSTOM_PAGES}
+    siblingsTitle="Types de projets"
+>
+    <h2>Ce que nous savons construire</h2>
+    <p>Chacune de ces compétences est déjà à l’œuvre dans le logiciel d’inventaire des archives :</p>
+    <ul>
+        <li><strong>Applications hors ligne et sur site</strong> : aucune donnée ne quitte l’organisation, installation depuis une clé USB.</li>
+        <li><strong>Applications Android de collecte terrain</strong> : appareil photo, contrôle de qualité immédiat, stockage sur le téléphone, export.</li>
+        <li><strong>OCR et traitement de documents</strong> en arabe et en français, interfaces bilingues de droite à gauche et de gauche à droite.</li>
+        <li><strong>IA installée sur vos machines</strong> pour extraire des données structurées de documents, sans aucun service externe.</li>
+        <li><strong>Moteurs de recherche</strong> adaptés au texte arabe et à ses variantes d’écriture.</li>
+        <li><strong>Back-offices web</strong> : comptes et rôles, journal d’audit, exports Excel et CSV, sauvegarde et restauration.</li>
+        <li><strong>Installateurs et paquets de déploiement hors ligne</strong> pour Windows et Ubuntu.</li>
+    </ul>
+
+    <h2>Des exemples de projets possibles</h2>
+    <p>À titre d’illustration, voici des besoins que ces briques permettent de traiter. Ce sont des <strong>possibilités</strong>, construites sur demande, pas des produits existants :</p>
+    <ul>
+        <li>adapter l’inventaire à votre plan de classement ou à votre tableau de gestion ;</li>
+        <li>suivre les mouvements et les prêts de dossiers ;</li>
+        <li>tenir un registre du courrier arrivée et départ ;</li>
+        <li>numériser et indexer des dossiers RH, fonciers, juridiques ou médicaux ;</li>
+        <li>relier l’inventaire à un système existant (GED, ERP) ;</li>
+        <li>collecter des données sur le terrain, sans réseau ;</li>
+        <li>extraire automatiquement les données de formulaires ou de factures.</li>
+    </ul>
+
+    <h2>Comment nous travaillons</h2>
+    <ol>
+        <li><strong>Analyse du besoin</strong> : vos documents, vos circuits, vos contraintes de confidentialité et d’exploitation.</li>
+        <li><strong>Maquette</strong> : les écrans et le parcours, validés avec les futurs utilisateurs.</li>
+        <li><strong>Pilote</strong> : une première version sur un périmètre réduit et de vraies données, chez vous.</li>
+        <li><strong>Déploiement</strong> : installation sur vos postes ou serveurs, reprise des données si nécessaire.</li>
+        <li><strong>Formation</strong> des utilisateurs et des administrateurs.</li>
+        <li><strong>Maintenance</strong> : corrections et évolutions, mises à jour livrées comme l’installation.</li>
+    </ol>
+
+    <h2>Vos données restent chez vous</h2>
+    <p>
+        Par défaut, nous concevons des applications qui fonctionnent sans dépendre d’un service en ligne : hébergement sur vos
+        machines, IA locale plutôt qu’une API externe, sauvegardes que vous gardez. Quand un service externe est vraiment utile,
+        nous l’indiquons clairement, avec ses conséquences.
+    </p>
+
+    <h2>Livrables habituels, précisés au contrat</h2>
+    <ul>
+        <li>l’application, et son code source selon les termes convenus ;</li>
+        <li>un paquet d’installation et la procédure de mise à jour ;</li>
+        <li>la documentation d’utilisation et d’exploitation ;</li>
+        <li>les tests automatiques qui vérifient son bon fonctionnement.</li>
+    </ul>
+    <Faq slot="after" items={faq} />
+</Page>

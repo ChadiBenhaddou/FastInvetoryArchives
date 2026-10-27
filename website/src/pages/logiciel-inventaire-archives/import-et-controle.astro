@@ -1,0 +1,44 @@
+---
+import Page from '../../layouts/Page.astro';
+import Screenshot from '../../components/Screenshot.astro';
+import { PRODUCT_PAGES } from '../../config/nav.mjs';
+import correction from '../../assets/screenshots/desktop/correction.png';
+---
+
+<Page
+    title="Import et contrôle des boîtes d'archives : doublons, conflits"
+    h1="Import et contrôle des boîtes"
+    description="Import des exports des téléphones : contrôle SHA-256, doublons ignorés, conflits mis de côté, numéros de boîtes manquants signalés, rapport d'import."
+    lead="Quand plusieurs équipes photographient des milliers de boîtes, les erreurs viennent du transfert : fichier copié deux fois, code recopié, téléphone réinstallé. L’import les détecte avant qu’elles n’entrent dans l’inventaire."
+    breadcrumbs={[{ name: 'Accueil', href: '/' }, { name: 'Le logiciel', href: '/logiciel-inventaire-archives/' }, { name: 'Import et contrôle', href: '/logiciel-inventaire-archives/import-et-controle/' }]}
+    offer="inventaire"
+    siblings={PRODUCT_PAGES}
+    siblingsTitle="Le logiciel en détail"
+>
+    <h2>Deux façons d’importer</h2>
+    <ul>
+        <li><strong>Glisser-déposer</strong> le fichier ZIP sur la page Import, depuis le PC ou, en réseau local, depuis un autre poste autorisé. Les gros fichiers sont envoyés par morceaux.</li>
+        <li><strong>Dossier surveillé</strong> : tout fichier copié dans le dossier <code>import</code> est importé automatiquement dès que la copie est terminée. Les fichiers importés sont rangés dans <code>imported</code>, les fichiers refusés dans <code>failed</code> avec un fichier texte qui explique quoi faire.</li>
+    </ul>
+
+    <h2>Ce qui est vérifié</h2>
+    <table>
+        <thead><tr><th>Contrôle</th><th>Ce qui se passe</th></tr></thead>
+        <tbody>
+            <tr><td>Intégrité de chaque photo</td><td>L’empreinte SHA-256 calculée par le téléphone est recalculée sur le PC : une photo abîmée pendant la copie est refusée.</td></tr>
+            <tr><td>Format de l’export</td><td>Le fichier de description est validé ; l’appareil doit être enregistré sur le PC.</td></tr>
+            <tr><td>Même fichier importé deux fois</td><td>« Déjà importé » : rien n’est modifié.</td></tr>
+            <tr><td>Boîte déjà connue, mêmes photos</td><td>Doublon ignoré.</td></tr>
+            <tr><td>Même code, photos différentes</td><td>Conflit mis de côté : un administrateur voit les deux versions et choisit de garder l’existant, de créer la boîte sous un autre code ou de remplacer.</td></tr>
+            <tr><td>Numéros de boîtes non reçus</td><td>Signalés par appareil sur le tableau de bord ; les numéros annulés sur le téléphone ne sont pas comptés comme manquants.</td></tr>
+        </tbody>
+    </table>
+    <p>Chaque import produit un <strong>rapport</strong> : boîtes et photos ajoutées, doublons ignorés, conflits, numéros manquants.</p>
+
+    <h2>Le code écrit sur la boîte, vérifié</h2>
+    <p>
+        Sur la page de chaque boîte, la photo du code écrit au marqueur est affichée à côté du code enregistré par le téléphone.
+        S’ils diffèrent, un administrateur corrige le code : les photos suivent et la correction est inscrite au journal.
+    </p>
+    <Screenshot src={correction} alt="Page d’une boîte : photo du document, champs extraits et bouton Enregistrer la correction" caption="Page d’une boîte : chaque document peut être corrigé, la correction est tracée" />
+</Page>
